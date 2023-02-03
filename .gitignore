@@ -1,0 +1,10 @@
+.vs
+Generated Files
+x64
+ARM
+packages
+AppPackages
+BundleArtifacts
+Release
+*.user
+vcpkg_installed
