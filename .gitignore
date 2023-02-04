@@ -6,5 +6,6 @@ packages
 AppPackages
 BundleArtifacts
 Release
+Debug
 *.user
 vcpkg_installed
