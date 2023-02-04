@@ -3,7 +3,7 @@
   <Identity
     Name="57864PaweWegner.CloudStorageBrowser"
     Publisher="CN=45E1A990-1A96-4132-833F-79DEA509C305"
-    Version="1.0.5.0" />
+    Version="1.0.6.0" />
   <mp:PhoneIdentity PhoneProductId="ac464426-795f-4a0e-8ad1-09523c40c9ae" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
   <Properties>
     <DisplayName>Cloud Storage Browser</DisplayName>
