@@ -41,7 +41,6 @@ Task<> App::RunHttpServer() {
     auto http_server = context.CreateHttpServer(AccountListener{});
     co_await semaphore_;
     co_await http_server.Quit();
-    co_return;
   } catch (const coro::Exception& exception) {
     std::stringstream stream;
     stream << exception.what() << '\n';
