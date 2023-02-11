@@ -31,19 +31,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\logo_store.scale-100.png">
+    <Image Include="Assets\SplashScreen.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\SplashScreen.scale-100.png">
+    <Image Include="Assets\Square44x44Logo.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\Square44x44Logo.scale-100.png">
+    <Image Include="Assets\Square150x150Logo.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\Square150x150Logo.scale-100.png">
+    <Image Include="Assets\StoreLogo.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\StoreLogo.scale-100.png">
+    <Image Include="Assets\logo_store.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
