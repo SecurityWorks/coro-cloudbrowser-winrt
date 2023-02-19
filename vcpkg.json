@@ -3,11 +3,6 @@
   "name": "coro-cloudbrowser-winrt",
   "version-string": "0.1.0",
   "dependencies": [
-    "coro-cloudstorage",
-    {
-      "name": "curl",
-      "default-features": false,
-      "features": ["ssl", "http2"]
-    }
+    "coro-cloudstorage"
   ]
 }
