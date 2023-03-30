@@ -1,8 +1,5 @@
-﻿// clang-format: off
-#include "pch.h"
-// clang-format: on
+﻿#include "App.h"
 
-#include "App.h"
 #include "MainPage.h"
 
 #undef CreateDirectory
@@ -11,17 +8,9 @@
 #include <coro/cloudstorage/util/cloud_factory_context.h>
 #include <coro/promise.h>
 
-namespace {
+namespace winrt::coro_cloudbrowser_winrt::implementation {
 
-using namespace winrt;
-using namespace Windows::ApplicationModel;
-using namespace Windows::ApplicationModel::Activation;
-using namespace Windows::Foundation;
-using namespace Windows::UI::Xaml;
-using namespace Windows::UI::Xaml::Controls;
-using namespace Windows::UI::Xaml::Navigation;
-using namespace coro_cloudbrowser_winrt;
-using namespace coro_cloudbrowser_winrt::implementation;
+namespace {
 
 using ::coro::RunTask;
 using ::coro::Task;
@@ -29,25 +18,46 @@ using ::coro::cloudstorage::util::CloudFactoryConfig;
 using ::coro::cloudstorage::util::CloudFactoryContext;
 using ::coro::cloudstorage::util::CloudProviderAccount;
 using ::coro::util::EventLoop;
+using ::winrt::Windows::ApplicationModel::SuspendingEventArgs;
+using ::winrt::Windows::ApplicationModel::Activation::ApplicationExecutionState;
+using ::winrt::Windows::ApplicationModel::Activation::LaunchActivatedEventArgs;
+using ::winrt::Windows::ApplicationModel::Core::CoreApplication;
+using ::winrt::Windows::Foundation::IAsyncAction;
+using ::winrt::Windows::Foundation::Collections::IObservableVector;
+using ::winrt::Windows::UI::Core::CoreDispatcherPriority;
+using ::winrt::Windows::UI::Xaml::UnhandledExceptionEventArgs;
+using ::winrt::Windows::UI::Xaml::Window;
+using ::winrt::Windows::UI::Xaml::Controls::Frame;
+using ::winrt::Windows::UI::Xaml::Navigation::NavigationFailedEventArgs;
 
 class AccountListener {
  public:
-  void OnCreate(std::shared_ptr<CloudProviderAccount> account) {
-    RunTask(Check(std::move(account)));
+  explicit AccountListener(
+      IObservableVector<coro_cloudbrowser_winrt::CloudProviderAccountModel>
+          accounts)
+      : accounts_(std::move(accounts)) {}
+
+  winrt::fire_and_forget OnCreate(
+      std::shared_ptr<CloudProviderAccount> account) {
+    co_await CoreApplication::MainView().Dispatcher().RunAsync(
+        CoreDispatcherPriority::Normal,
+        [accounts = this->accounts_, account = std::move(account)] {
+          auto account_model = make<CloudProviderAccountModel>();
+          account_model.Label(to_hstring(std::string(account->username())));
+          accounts.Append(std::move(account_model));
+        });
   }
 
-  void OnDestroy(std::shared_ptr<CloudProviderAccount> account) {}
+  winrt::fire_and_forget OnDestroy(
+      std::shared_ptr<CloudProviderAccount> account) {
+    co_await CoreApplication::MainView().Dispatcher().RunAsync(
+        CoreDispatcherPriority::Normal,
+        [accounts = this->accounts_, account = std::move(account)] {});
+  }
 
  private:
-  Task<> Check(std::shared_ptr<CloudProviderAccount> account) const noexcept {
-    const auto& provider = account->provider();
-    auto root = co_await provider->GetRoot(account->stop_token());
-    auto page = co_await provider->ListDirectoryPage(
-        root, /*page_token=*/std::nullopt, account->stop_token());
-    std::stringstream stream;
-    stream << "PAGE " << page.items.size() << '\n';
-    OutputDebugStringA(stream.str().c_str());
-  }
+  IObservableVector<coro_cloudbrowser_winrt::CloudProviderAccountModel>
+      accounts_;
 };
 
 }  // namespace
@@ -55,7 +65,7 @@ class AccountListener {
 Task<> App::RunHttpServer() {
   try {
     CloudFactoryContext context{&event_loop_, CloudFactoryConfig()};
-    auto http_server = context.CreateHttpServer(AccountListener{});
+    auto http_server = context.CreateHttpServer(AccountListener(accounts_));
     co_await semaphore_;
     co_await http_server.Quit();
   } catch (const coro::Exception& exception) {
@@ -70,7 +80,9 @@ Task<> App::RunHttpServer() {
 /// authored code executed, and as such is the logical equivalent of main() or
 /// WinMain().
 /// </summary>
-App::App() {
+App::App()
+    : accounts_(single_threaded_observable_vector<
+                coro_cloudbrowser_winrt::CloudProviderAccountModel>()) {
   Suspending({this, &App::OnSuspending});
 
 #if defined _DEBUG && \
@@ -78,7 +90,7 @@ App::App() {
   UnhandledException(
       [this](IInspectable const&, UnhandledExceptionEventArgs const& e) {
         if (IsDebuggerPresent()) {
-          auto errorMessage = e.Message();
+          auto error_message = e.Message();
           __debugbreak();
         }
       });
@@ -91,26 +103,26 @@ App::App() {
 /// specific file.
 /// </summary>
 /// <param name="e">Details about the launch request and process.</param>
-void App::OnLaunched(LaunchActivatedEventArgs const& e) {
+IAsyncAction App::OnLaunched(LaunchActivatedEventArgs const& e) {
   thread_ = std::async(std::launch::async, [&] {
     RunTask(RunHttpServer());
     event_loop_.EnterLoop();
   });
 
-  Frame rootFrame{nullptr};
+  Frame root_frame{nullptr};
   auto content = Window::Current().Content();
   if (content) {
-    rootFrame = content.try_as<Frame>();
+    root_frame = content.try_as<Frame>();
   }
 
   // Do not repeat app initialization when the Window already has content,
   // just ensure that the window is active
-  if (rootFrame == nullptr) {
+  if (root_frame == nullptr) {
     // Create a Frame to act as the navigation context and associate it with
     // a SuspensionManager key
-    rootFrame = Frame();
+    root_frame = Frame();
 
-    rootFrame.NavigationFailed({this, &App::OnNavigationFailed});
+    root_frame.NavigationFailed({this, &App::OnNavigationFailed});
 
     if (e.PreviousExecutionState() == ApplicationExecutionState::Terminated) {
       // Restore the saved session state only when appropriate, scheduling the
@@ -118,31 +130,33 @@ void App::OnLaunched(LaunchActivatedEventArgs const& e) {
     }
 
     if (e.PrelaunchActivated() == false) {
-      if (rootFrame.Content() == nullptr) {
+      if (root_frame.Content() == nullptr) {
         // When the navigation stack isn't restored navigate to the first page,
         // configuring the new page by passing required information as a
         // navigation parameter
-        rootFrame.Navigate(xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
-                           box_value(e.Arguments()));
+        root_frame.Navigate(xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
+                            accounts_);
       }
       // Place the frame in the current Window
-      Window::Current().Content(rootFrame);
+      Window::Current().Content(root_frame);
       // Ensure the current window is active
       Window::Current().Activate();
     }
   } else {
     if (e.PrelaunchActivated() == false) {
-      if (rootFrame.Content() == nullptr) {
+      if (root_frame.Content() == nullptr) {
         // When the navigation stack isn't restored navigate to the first page,
         // configuring the new page by passing required information as a
         // navigation parameter
-        rootFrame.Navigate(xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
-                           box_value(e.Arguments()));
+        root_frame.Navigate(xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
+                            accounts_);
       }
       // Ensure the current window is active
       Window::Current().Activate();
     }
   }
+
+  co_return;
 }
 
 /// <summary>
@@ -170,3 +184,5 @@ void App::OnNavigationFailed(IInspectable const&,
   throw hresult_error(
       E_FAIL, hstring(L"Failed to load Page ") + e.SourcePageType().Name);
 }
+
+}  // namespace winrt::coro_cloudbrowser_winrt::implementation

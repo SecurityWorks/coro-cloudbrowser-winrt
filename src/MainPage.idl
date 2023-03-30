@@ -1,9 +1,5 @@
-namespace coro_cloudbrowser_winrt
-{
-    [default_interface]
-    runtimeclass MainPage : Windows.UI.Xaml.Controls.Page
-    {
-        MainPage();
-        Int32 MyProperty;
-    }
+namespace coro_cloudbrowser_winrt {
+[default_interface] runtimeclass MainPage : Windows.UI.Xaml.Controls.Page {
+  MainPage();
 }
+}  // namespace coro_cloudbrowser_winrt

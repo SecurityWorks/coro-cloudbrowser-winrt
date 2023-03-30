@@ -5,12 +5,13 @@
 #include <future>
 
 #include "App.xaml.g.h"
+#include "CloudProviderAccountModel.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
 struct App : AppT<App> {
   App();
-  void OnLaunched(
+  winrt::Windows::Foundation::IAsyncAction OnLaunched(
       Windows::ApplicationModel::Activation::LaunchActivatedEventArgs const &);
   void OnSuspending(IInspectable const &,
                     Windows::ApplicationModel::SuspendingEventArgs const &);
@@ -24,6 +25,9 @@ struct App : AppT<App> {
   std::future<void> thread_;
   coro::Promise<void> semaphore_;
   coro::util::EventLoop event_loop_;
+  winrt::Windows::Foundation::Collections::IObservableVector<
+      coro_cloudbrowser_winrt::CloudProviderAccountModel>
+      accounts_;
 };
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

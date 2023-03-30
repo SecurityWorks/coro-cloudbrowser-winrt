@@ -1,21 +1,25 @@
 ﻿#pragma once
 
+#include "CloudProviderAccountModel.h"
 #include "MainPage.g.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
 struct MainPage : MainPageT<MainPage> {
-  MainPage() {
-    // Xaml objects should not call InitializeComponent during construction.
-    // See
-    // https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
-  }
+  void NavViewLoaded(Windows::Foundation::IInspectable const& sender,
+                     Windows::UI::Xaml::RoutedEventArgs const& args);
 
-  int32_t MyProperty();
-  void MyProperty(int32_t value);
+  void OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs e);
 
-  void ClickHandler(Windows::Foundation::IInspectable const& sender,
-                    Windows::UI::Xaml::RoutedEventArgs const& args);
+  void OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs e);
+
+ private:
+  void UpdateMenu();
+
+  event_token accounts_changed_;
+  Windows::Foundation::Collections::IObservableVector<
+      coro_cloudbrowser_winrt::CloudProviderAccountModel>
+      accounts_;
 };
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

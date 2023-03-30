@@ -62,4 +62,9 @@
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Midl Include="src\CloudProviderAccountModel.idl">
+      <Filter>Source</Filter>
+    </Midl>
+  </ItemGroup>
 </Project>
