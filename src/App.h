@@ -1,9 +1,10 @@
 ﻿#pragma once
+#include <coro/promise.h>
+#include <coro/util/event_loop.h>
+
 #include <future>
 
 #include "App.xaml.g.h"
-#include "coro/promise.h"
-#include "coro/util/event_loop.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 

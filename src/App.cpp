@@ -4,8 +4,12 @@
 
 #include "App.h"
 #include "MainPage.h"
-#include "coro/cloudstorage/util/cloud_factory_context.h"
-#include "coro/promise.h"
+
+#undef CreateDirectory
+#undef CreateFile
+
+#include <coro/cloudstorage/util/cloud_factory_context.h>
+#include <coro/promise.h>
 
 namespace {
 
@@ -28,9 +32,22 @@ using ::coro::util::EventLoop;
 
 class AccountListener {
  public:
-  void OnCreate(std::shared_ptr<CloudProviderAccount> account) {}
+  void OnCreate(std::shared_ptr<CloudProviderAccount> account) {
+    RunTask(Check(std::move(account)));
+  }
 
   void OnDestroy(std::shared_ptr<CloudProviderAccount> account) {}
+
+ private:
+  Task<> Check(std::shared_ptr<CloudProviderAccount> account) const noexcept {
+    const auto& provider = account->provider();
+    auto root = co_await provider->GetRoot(account->stop_token());
+    auto page = co_await provider->ListDirectoryPage(
+        root, /*page_token=*/std::nullopt, account->stop_token());
+    std::stringstream stream;
+    stream << "PAGE " << page.items.size() << '\n';
+    OutputDebugStringA(stream.str().c_str());
+  }
 };
 
 }  // namespace

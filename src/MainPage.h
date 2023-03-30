@@ -2,26 +2,26 @@
 
 #include "MainPage.g.h"
 
-namespace winrt::coro_cloudbrowser_winrt::implementation
-{
-    struct MainPage : MainPageT<MainPage>
-    {
-        MainPage()
-        {
-            // Xaml objects should not call InitializeComponent during construction.
-            // See https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
-        }
+namespace winrt::coro_cloudbrowser_winrt::implementation {
 
-        int32_t MyProperty();
-        void MyProperty(int32_t value);
+struct MainPage : MainPageT<MainPage> {
+  MainPage() {
+    // Xaml objects should not call InitializeComponent during construction.
+    // See
+    // https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
+  }
 
-        void ClickHandler(Windows::Foundation::IInspectable const& sender, Windows::UI::Xaml::RoutedEventArgs const& args);
-    };
-}
+  int32_t MyProperty();
+  void MyProperty(int32_t value);
 
-namespace winrt::coro_cloudbrowser_winrt::factory_implementation
-{
-    struct MainPage : MainPageT<MainPage, implementation::MainPage>
-    {
-    };
-}
+  void ClickHandler(Windows::Foundation::IInspectable const& sender,
+                    Windows::UI::Xaml::RoutedEventArgs const& args);
+};
+
+}  // namespace winrt::coro_cloudbrowser_winrt::implementation
+
+namespace winrt::coro_cloudbrowser_winrt::factory_implementation {
+
+struct MainPage : MainPageT<MainPage, implementation::MainPage> {};
+
+}  // namespace winrt::coro_cloudbrowser_winrt::factory_implementation
