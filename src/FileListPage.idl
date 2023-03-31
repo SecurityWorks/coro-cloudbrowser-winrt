@@ -1,0 +1,5 @@
+namespace coro_cloudbrowser_winrt {
+[default_interface] runtimeclass FileListPage : Windows.UI.Xaml.Controls.Page {
+  FileListPage();
+}
+}  // namespace coro_cloudbrowser_winrt

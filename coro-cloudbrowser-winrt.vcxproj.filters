@@ -59,6 +59,9 @@
     <Page Include="src\AddAccountPage.xaml">
       <Filter>Source</Filter>
     </Page>
+    <Page Include="src\FileListPage.xaml">
+      <Filter>Source</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/pch.h">
