@@ -37,10 +37,7 @@ void MainPage::UpdateMenu() {
   for (const auto& account : accounts_) {
     NavigationViewItem item;
     item.ContentTemplate(NavViewMenuItemTemplate());
-    auto type_model = winrt::make<CloudProviderAccountModel>();
-    type_model.Label(account.Label());
-    type_model.ImageSource(L"http://localhost:12345/static/google.png");
-    item.Content(std::move(type_model));
+    item.Content(account);
     NavigationView().MenuItems().Append(std::move(item));
   }
 

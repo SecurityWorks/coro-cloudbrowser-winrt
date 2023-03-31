@@ -14,10 +14,7 @@ class CloudProviderAccountModel
 
   CloudProviderAccountModel(
       coro::util::EventLoop* event_loop,
-      std::shared_ptr<coro::cloudstorage::util::CloudProviderAccount> account)
-      : event_loop_(event_loop),
-        account_(std::move(account)),
-        label_(to_hstring(account_->username())) {}
+      std::shared_ptr<coro::cloudstorage::util::CloudProviderAccount> account);
 
   hstring ImageSource() const;
   void ImageSource(hstring);

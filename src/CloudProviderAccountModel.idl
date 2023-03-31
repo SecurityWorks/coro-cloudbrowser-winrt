@@ -4,4 +4,4 @@ namespace coro_cloudbrowser_winrt {
   String Label;
   String ImageSource;
 }
-}
+}  // namespace coro_cloudbrowser_winrt
