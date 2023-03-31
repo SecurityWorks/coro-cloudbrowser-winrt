@@ -197,6 +197,10 @@
     <ClInclude Include="src/MainPage.h">
       <DependentUpon>src/MainPage.xaml</DependentUpon>
     </ClInclude>
+    <ClInclude Include="src\AddAccountPage.h">
+      <DependentUpon>src\AddAccountPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="src\CloudProviderAccountModel.h">
       <DependentUpon>src\CloudProviderAccountModel.idl</DependentUpon>
       <SubType>Code</SubType>
@@ -207,6 +211,9 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Page Include="src/MainPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="src\AddAccountPage.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
@@ -226,6 +233,10 @@
       <DependentUpon>src/MainPage.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ClCompile Include="src\AddAccountPage.cpp">
+      <DependentUpon>src\AddAccountPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="src\CloudProviderAccountModel.cpp">
       <DependentUpon>src\CloudProviderAccountModel.idl</DependentUpon>
       <SubType>Code</SubType>
@@ -237,6 +248,10 @@
     </Midl>
     <Midl Include="src/MainPage.idl">
       <DependentUpon>src/MainPage.xaml</DependentUpon>
+    </Midl>
+    <Midl Include="src\AddAccountPage.idl">
+      <DependentUpon>src\AddAccountPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
     </Midl>
     <Midl Include="src\CloudProviderAccountModel.idl">
       <SubType>Designer</SubType>

@@ -1,0 +1,6 @@
+namespace coro_cloudbrowser_winrt {
+[default_interface] runtimeclass AddAccountPage
+    : Windows.UI.Xaml.Controls.Page {
+  AddAccountPage();
+}
+}  // namespace coro_cloudbrowser_winrt

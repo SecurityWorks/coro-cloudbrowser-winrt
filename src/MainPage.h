@@ -13,6 +13,11 @@ struct MainPage : MainPageT<MainPage> {
 
   void OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs e);
 
+  void MenuItemInvoked(
+      const Windows::UI::Xaml::Controls::NavigationView& sender,
+      const Windows::UI::Xaml::Controls::NavigationViewItemInvokedEventArgs&
+          args);
+
  private:
   void UpdateMenu();
 

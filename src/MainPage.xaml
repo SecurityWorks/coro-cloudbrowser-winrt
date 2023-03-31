@@ -5,7 +5,6 @@
     xmlns:local="using:coro_cloudbrowser_winrt"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d">
 
     <Page.Resources>
@@ -32,27 +31,7 @@
         </DataTemplate>
     </Page.Resources>
 
-    <NavigationView x:Name="NavigationView" IsBackButtonVisible="Collapsed" Loaded="NavViewLoaded">
-        <Frame x:Name="ContentFrame" Margin="24,0,24,24">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBox Name="addressBar" Grid.Column="0"/>
-                <Button x:Name="myButton" Grid.Column="1">Go</Button>
-
-                <controls:WebView2 
-                    x:Name="MyWebView" 
-                    Grid.Row="1" 
-                    Grid.ColumnSpan="2"
-                    Source="http://localhost:12345" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </Grid>
-        </Frame>
+    <NavigationView x:Name="NavigationView" ItemInvoked="MenuItemInvoked" IsBackButtonVisible="Collapsed" Loaded="NavViewLoaded">
+        <Frame x:Name="ContentFrame" Margin="24,0,24,24" />
     </NavigationView>
 </Page>
