@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <coro/cloudstorage/util/cloud_factory_context.h>
 #include <coro/promise.h>
 #include <coro/util/event_loop.h>
 
@@ -22,12 +23,13 @@ struct App : AppT<App> {
  private:
   coro::Task<> RunHttpServer();
 
-  std::future<void> thread_;
-  coro::Promise<void> semaphore_;
   coro::util::EventLoop event_loop_;
+  coro::cloudstorage::util::CloudFactoryContext context_;
+  coro::Promise<void> semaphore_;
   winrt::Windows::Foundation::Collections::IObservableVector<
       coro_cloudbrowser_winrt::CloudProviderAccountModel>
       accounts_;
+  std::future<void> thread_;
 };
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

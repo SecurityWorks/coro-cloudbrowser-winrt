@@ -32,19 +32,20 @@ using ::winrt::Windows::UI::Xaml::Navigation::NavigationFailedEventArgs;
 
 class AccountListener {
  public:
-  explicit AccountListener(
+  AccountListener(
+      coro::util::EventLoop* event_loop,
       IObservableVector<coro_cloudbrowser_winrt::CloudProviderAccountModel>
           accounts)
-      : accounts_(std::move(accounts)) {}
+      : event_loop_(event_loop), accounts_(std::move(accounts)) {}
 
   winrt::fire_and_forget OnCreate(
       std::shared_ptr<CloudProviderAccount> account) {
     co_await CoreApplication::MainView().Dispatcher().RunAsync(
         CoreDispatcherPriority::Normal,
-        [accounts = this->accounts_, account = std::move(account)] {
-          auto account_model = make<CloudProviderAccountModel>();
-          account_model.Label(to_hstring(std::string(account->username())));
-          accounts.Append(std::move(account_model));
+        [event_loop = this->event_loop_, accounts = this->accounts_,
+         account = std::move(account)] {
+          accounts.Append(
+              make<CloudProviderAccountModel>(event_loop, std::move(account)));
         });
   }
 
@@ -52,10 +53,20 @@ class AccountListener {
       std::shared_ptr<CloudProviderAccount> account) {
     co_await CoreApplication::MainView().Dispatcher().RunAsync(
         CoreDispatcherPriority::Normal,
-        [accounts = this->accounts_, account = std::move(account)] {});
+        [accounts = this->accounts_, account = std::move(account)] {
+          for (uint32_t i = 0; i < accounts.Size();) {
+            auto entry = accounts.GetAt(i).as<CloudProviderAccountModel>();
+            if (entry->Id() == account->id()) {
+              accounts.RemoveAt(i);
+            } else {
+              i++;
+            }
+          }
+        });
   }
 
  private:
+  coro::util::EventLoop* event_loop_;
   IObservableVector<coro_cloudbrowser_winrt::CloudProviderAccountModel>
       accounts_;
 };
@@ -64,8 +75,8 @@ class AccountListener {
 
 Task<> App::RunHttpServer() {
   try {
-    CloudFactoryContext context{&event_loop_, CloudFactoryConfig()};
-    auto http_server = context.CreateHttpServer(AccountListener(accounts_));
+    auto http_server =
+        context_.CreateHttpServer(AccountListener(&event_loop_, accounts_));
     co_await semaphore_;
     co_await http_server.Quit();
   } catch (const coro::Exception& exception) {
@@ -81,7 +92,8 @@ Task<> App::RunHttpServer() {
 /// WinMain().
 /// </summary>
 App::App()
-    : accounts_(single_threaded_observable_vector<
+    : context_(&event_loop_, CloudFactoryConfig()),
+      accounts_(single_threaded_observable_vector<
                 coro_cloudbrowser_winrt::CloudProviderAccountModel>()) {
   Suspending({this, &App::OnSuspending});
 
@@ -169,9 +181,6 @@ IAsyncAction App::OnLaunched(LaunchActivatedEventArgs const& e) {
 void App::OnSuspending([[maybe_unused]] IInspectable const& sender,
                        [[maybe_unused]] SuspendingEventArgs const& e) {
   // Save application state and stop any background activity
-
-  event_loop_.Do([&] { semaphore_.SetValue(); });
-  thread_.get();
 }
 
 /// <summary>

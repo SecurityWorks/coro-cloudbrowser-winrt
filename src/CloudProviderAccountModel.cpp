@@ -3,6 +3,8 @@
 #include "CloudProviderAccountModel.g.cpp"
 #endif
 
+#include <coro/promise.h>
+
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
 hstring CloudProviderAccountModel::ImageSource() const { return image_source_; }
@@ -15,6 +17,20 @@ hstring CloudProviderAccountModel::Label() const { return label_; }
 
 void CloudProviderAccountModel::Label(hstring label) {
   label_ = std::move(label);
+}
+
+winrt::fire_and_forget CloudProviderAccountModel::final_release(
+    std::unique_ptr<CloudProviderAccountModel> d) noexcept {
+  if (d->event_loop_ == nullptr) {
+    co_return;
+  }
+  coro::Promise<void> promise;
+  d->event_loop_->RunOnEventLoop(
+      [account = std::move(d->account_), &promise]() mutable {
+        account = nullptr;
+        promise.SetValue();
+      });
+  co_await promise;
 }
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
