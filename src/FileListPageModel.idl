@@ -1,0 +1,10 @@
+import "CloudProviderAccountModel.idl";
+
+namespace coro_cloudbrowser_winrt {
+[bindable][default_interface] runtimeclass FileListPageModel {
+  FileListPageModel(CloudProviderAccountModel account, String path);
+
+  CloudProviderAccountModel Account;
+  String Path;
+}
+}  // namespace coro_cloudbrowser_winrt

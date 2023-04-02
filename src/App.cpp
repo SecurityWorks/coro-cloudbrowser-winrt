@@ -1,12 +1,9 @@
 ﻿#include "App.h"
 
-#include "MainPage.h"
-
-#undef CreateDirectory
-#undef CreateFile
-
 #include <coro/cloudstorage/util/cloud_factory_context.h>
 #include <coro/promise.h>
+
+#include "MainPage.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 

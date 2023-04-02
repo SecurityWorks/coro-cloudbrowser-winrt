@@ -24,6 +24,15 @@ class CloudProviderAccountModel
 
   auto Id() const { return account_->id(); }
 
+  concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::Directory>
+      GetRoot(concurrency::cancellation_token) const;
+
+  concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::PageData>
+  ListDirectoryPage(
+      coro::cloudstorage::util::AbstractCloudProvider::Directory directory,
+      std::optional<std::string> page_token,
+      concurrency::cancellation_token) const;
+
   static winrt::fire_and_forget final_release(
       std::unique_ptr<CloudProviderAccountModel> ptr) noexcept;
 

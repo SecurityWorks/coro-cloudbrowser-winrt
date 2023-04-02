@@ -1,0 +1,10 @@
+namespace coro_cloudbrowser_winrt {
+[bindable][default_interface] runtimeclass FileListEntryModel {
+  FileListEntryModel();
+
+  Int64 Size;
+  String Id;
+  String Filename;
+  String Thumbnail;
+}
+}  // namespace coro_cloudbrowser_winrt

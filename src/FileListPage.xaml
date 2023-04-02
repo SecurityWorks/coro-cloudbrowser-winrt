@@ -7,7 +7,205 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Button x:Name="Button">Click Me</Button>
-    </StackPanel>
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" 
+          GettingFocus="OnGettingFocus"
+          XYFocusKeyboardNavigation="Enabled"
+          KeyDown="OnKeyDown">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Border Grid.Row="0" Grid.Column="0" Height="10">
+            <ProgressBar x:Name="progress_bar" IsIndeterminate="True" Visibility="Collapsed"/>
+        </Border>
+        <Grid Grid.Row="1" Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="back" 
+                    Grid.Row="0" Grid.Column="0" 
+                    Style="{StaticResource NavigationBackButtonNormalStyle}" Click="BackButtonClick"/>
+            <Grid HorizontalAlignment="Right">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+                <AppBarButton 
+                    Grid.Row="0" Grid.Column="0" 
+                    Click="CreateDirectoryClick" Label="New Folder" 
+                    x:Name="create_directory_button">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="Add"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton 
+                    Grid.Row="0" Grid.Column="1" Label="Upload"
+                    x:Name="upload_button"
+                    Click="UploadClick">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="Upload"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton 
+                    x:Name="delete_button" 
+                    Grid.Row="0" Grid.Column="2" 
+                    Label="Delete"
+                    Visibility="Collapsed"
+                    Click="DeleteClick">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="Delete"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton 
+                    x:Name="rename_button" 
+                    Grid.Row="0" Grid.Column="3" 
+                    Label="Rename"
+                    Visibility="Collapsed"
+                    Click="RenameClick">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="Rename"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton 
+                    x:Name="move_button" 
+                    Grid.Row="0" Grid.Column="4" 
+                    Visibility="Collapsed"
+                    Click="MoveClick">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="MoveToFolder"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton 
+                    x:Name="move_cancel" 
+                    Grid.Row="0" Grid.Column="5" 
+                    Label="Cancel"
+                    Visibility="Collapsed"
+                    Click="MoveCancelClick">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="Cancel"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton 
+                    x:Name="download_button" 
+                    Grid.Row="0" Grid.Column="6" 
+                    Label="Download"
+                    Visibility="Collapsed"
+                    Click="DownloadClick">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="Download"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton 
+                    x:Name="refresh_button" 
+                    Grid.Row="0" Grid.Column="7" 
+                    Label="Refresh"
+                    Visibility="Visible"
+                    Click="RefreshClick">
+                    <AppBarButton.Icon>
+                        <SymbolIcon Symbol="Refresh"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </Grid>
+        </Grid>
+        <TextBlock Grid.Row="2" Grid.Column="0" Margin="16" x:Name="path"/>
+        <ListView x:Name="FileList"
+                  Grid.Row="3" Grid.Column="0"
+                  IsItemClickEnabled="True"
+                  ItemClick="FileListEntryClick">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:FileListEntryModel">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                            <Border Padding="0, 8, 0, 8">
+                                <Viewbox MaxWidth="64" MaxHeight="64">
+                                    <SymbolIcon
+                                        x:Name="icon"
+                                        Symbol="{Binding Icon}" 
+                                        Visibility="{Binding IconVisibility}"/>
+                                </Viewbox>
+                            </Border>
+                            <Border Padding="0, 8, 12, 8">
+                                <Image
+                                    x:Name="thumbnail"
+                                    Source="{Binding Thumbnail}" 
+                                    Width="64" Height="64"
+                                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Loaded="FileListEntryThumbnailLoaded">
+                                    <Image.Resources>
+                                        <Storyboard x:Name="animation">
+                                            <DoubleAnimation
+                                                Storyboard.TargetName="thumbnail"
+                                                Storyboard.TargetProperty="Opacity"
+                                                From="0.0" To="1.0" Duration="0:0:0.25"/>
+                                        </Storyboard>
+                                    </Image.Resources>
+                                </Image>
+                            </Border>
+                            <Border Height="64">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Height="40">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock
+                                            Style="{ThemeResource BaseTextBlockStyle}" 
+                                            Foreground="{ThemeResource SystemControlPageTextBaseHighBrush}"
+                                            Text="{Binding Filename}"/>
+                                    </StackPanel>
+                                    <TextBlock
+                                        Text="{Binding Timestamp}"
+                                        Style="{ThemeResource BodyTextBlockStyle}" 
+                                        Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <Border Grid.Row="0" Grid.Column="1" Padding="8">
+                            <StackPanel 
+                                Orientation="Horizontal" 
+                                HorizontalAlignment="Right">
+                                <TextBlock 
+                                    Text="{x:Bind Size}"
+                                    Style="{ThemeResource BodyTextBlockStyle}" 
+                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                <Border Padding="16,0,0,0" Width="56">
+                                    <CheckBox Name="{x:Bind Id}"
+                                              Checked="FileListEntryCheckboxChecked" 
+                                              Unchecked="FileListEntryCheckboxUnchecked"
+                                              IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsCheckEnabled}"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
 </Page>

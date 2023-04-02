@@ -3,6 +3,7 @@
 #include "AddAccountPage.h"
 #include "CloudProviderAccountModel.h"
 #include "FileListPage.h"
+#include "FileListPageModel.h"
 #include "MainPage.g.cpp"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
@@ -29,6 +30,7 @@ void MainPage::OnNavigatedTo(NavigationEventArgs e) {
 
 void MainPage::OnNavigatedFrom(NavigationEventArgs e) {
   accounts_.VectorChanged(accounts_changed_);
+  accounts_ = nullptr;
 }
 
 void MainPage::NavViewLoaded(IInspectable const&, RoutedEventArgs const&) {
@@ -46,9 +48,12 @@ void MainPage::MenuItemInvoked(
       if (entry.Tag().try_as<hstring>() == kAddAccountPageTag) {
         ContentFrame().Navigate(
             xaml_typename<coro_cloudbrowser_winrt::AddAccountPage>());
-      } else {
+      } else if (auto account = args.InvokedItem()
+                                    .try_as<coro_cloudbrowser_winrt::
+                                                CloudProviderAccountModel>()) {
         ContentFrame().Navigate(
-            xaml_typename<coro_cloudbrowser_winrt::FileListPage>());
+            xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
+            winrt::make<FileListPageModel>(account, /*path=*/L"/"));
       }
     }
   }

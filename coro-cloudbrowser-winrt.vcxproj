@@ -163,6 +163,18 @@
     <Link>
       <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mfuuid.lib;strmiids.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Midl>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">src</AdditionalIncludeDirectories>
+    </Midl>
+    <Midl>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">src</AdditionalIncludeDirectories>
+    </Midl>
+    <Midl>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">src</AdditionalIncludeDirectories>
+    </Midl>
+    <Midl>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">src</AdditionalIncludeDirectories>
+    </Midl>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
@@ -188,6 +200,18 @@
       <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mfuuid.lib;strmiids.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mfuuid.lib;strmiids.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Midl>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">src</AdditionalIncludeDirectories>
+    </Midl>
+    <Midl>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">src</AdditionalIncludeDirectories>
+    </Midl>
+    <Midl>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">src</AdditionalIncludeDirectories>
+    </Midl>
+    <Midl>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">src</AdditionalIncludeDirectories>
+    </Midl>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src/pch.h" />
@@ -206,8 +230,16 @@
       <SubType>Code</SubType>
     </ClInclude>
     <ClInclude Include="src\EventLoopUtils.h" />
+    <ClInclude Include="src\FileListEntryModel.h">
+      <DependentUpon>src\FileListEntryModel.idl</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="src\FileListPage.h">
       <DependentUpon>src\FileListPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
+    <ClInclude Include="src\FileListPageModel.h">
+      <DependentUpon>src\FileListPageModel.idl</DependentUpon>
       <SubType>Code</SubType>
     </ClInclude>
   </ItemGroup>
@@ -250,8 +282,16 @@
       <SubType>Code</SubType>
     </ClCompile>
     <ClCompile Include="src\EventLoopUtils.cpp" />
+    <ClCompile Include="src\FileListEntryModel.cpp">
+      <DependentUpon>src\FileListEntryModel.idl</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="src\FileListPage.cpp">
       <DependentUpon>src\FileListPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
+    <ClCompile Include="src\FileListPageModel.cpp">
+      <DependentUpon>src\FileListPageModel.idl</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
   </ItemGroup>
@@ -269,9 +309,15 @@
     <Midl Include="src\CloudProviderAccountModel.idl">
       <SubType>Designer</SubType>
     </Midl>
+    <Midl Include="src\FileListEntryModel.idl">
+      <SubType>Designer</SubType>
+    </Midl>
     <Midl Include="src\FileListPage.idl">
       <DependentUpon>src\FileListPage.xaml</DependentUpon>
       <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="src\FileListPageModel.idl">
+      <SubType>Designer</SubType>
     </Midl>
   </ItemGroup>
   <ItemGroup>
