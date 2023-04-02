@@ -12,7 +12,7 @@ namespace winrt::coro_cloudbrowser_winrt::implementation {
 
 struct App : AppT<App> {
   App();
-  winrt::Windows::Foundation::IAsyncAction OnLaunched(
+  void OnLaunched(
       Windows::ApplicationModel::Activation::LaunchActivatedEventArgs const &);
   void OnSuspending(IInspectable const &,
                     Windows::ApplicationModel::SuspendingEventArgs const &);

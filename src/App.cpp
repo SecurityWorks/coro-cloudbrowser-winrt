@@ -113,7 +113,7 @@ App::App()
 /// specific file.
 /// </summary>
 /// <param name="e">Details about the launch request and process.</param>
-IAsyncAction App::OnLaunched(LaunchActivatedEventArgs const& e) {
+void App::OnLaunched(LaunchActivatedEventArgs const& e) {
   thread_ = std::async(std::launch::async, [&] {
     RunTask(RunHttpServer());
     event_loop_.EnterLoop();
@@ -165,8 +165,6 @@ IAsyncAction App::OnLaunched(LaunchActivatedEventArgs const& e) {
       Window::Current().Activate();
     }
   }
-
-  co_return;
 }
 
 /// <summary>
