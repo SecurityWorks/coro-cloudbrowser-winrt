@@ -6,6 +6,8 @@
 #include <coro/promise.h>
 #include <fmt/format.h>
 
+#include "EventLoopUtils.h"
+
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
 CloudProviderAccountModel::CloudProviderAccountModel(
@@ -34,13 +36,8 @@ winrt::fire_and_forget CloudProviderAccountModel::final_release(
   if (d->event_loop_ == nullptr) {
     co_return;
   }
-  coro::Promise<void> promise;
-  d->event_loop_->RunOnEventLoop(
-      [account = std::move(d->account_), &promise]() mutable {
-        account = nullptr;
-        promise.SetValue();
-      });
-  co_await promise;
+  co_await coro::cloudbrowser::util::SwitchTo(d->event_loop_);
+  d->account_ = nullptr;
 }
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

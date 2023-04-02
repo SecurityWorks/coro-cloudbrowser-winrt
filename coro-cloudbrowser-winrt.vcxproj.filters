@@ -7,6 +7,9 @@
     <ClCompile Include="src/pch.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="src\EventLoopUtils.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -65,6 +68,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/pch.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EventLoopUtils.h">
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
