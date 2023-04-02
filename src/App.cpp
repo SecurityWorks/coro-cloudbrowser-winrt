@@ -2,6 +2,7 @@
 
 #include <coro/cloudstorage/util/cloud_factory_context.h>
 #include <coro/promise.h>
+#include <direct.h>
 
 #include "MainPage.h"
 

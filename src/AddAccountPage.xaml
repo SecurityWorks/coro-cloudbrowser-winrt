@@ -20,10 +20,10 @@
         <TextBox Name="addressBar" Grid.Column="0"/>
         <Button x:Name="myButton" Grid.Column="1">Go</Button>
 
-        <controls:WebView2 
-                    x:Name="MyWebView" 
-                    Grid.Row="1" 
-                    Grid.ColumnSpan="2"
-                    Source="http://localhost:12345" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <WebView 
+            x:Name="MyWebView" 
+            Grid.Row="1" 
+            Grid.ColumnSpan="2"
+            Source="http://localhost:12345" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
     </Grid>
 </Page>
