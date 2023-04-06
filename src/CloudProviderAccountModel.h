@@ -27,6 +27,9 @@ class CloudProviderAccountModel
   concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::Directory>
       GetRoot(concurrency::cancellation_token) const;
 
+  concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::Item>
+  GetItemByPath(std::string path, concurrency::cancellation_token) const;
+
   concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::PageData>
   ListDirectoryPage(
       coro::cloudstorage::util::AbstractCloudProvider::Directory directory,

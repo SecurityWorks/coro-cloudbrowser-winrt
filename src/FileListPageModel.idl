@@ -2,9 +2,15 @@ import "CloudProviderAccountModel.idl";
 
 namespace coro_cloudbrowser_winrt {
 [bindable][default_interface] runtimeclass FileListPageModel {
-  FileListPageModel(CloudProviderAccountModel account, String path);
+  FileListPageModel(
+      CloudProviderAccountModel account, String path,
+      Windows.Foundation.EventHandler<String> on_item_click,
+      Windows.Foundation.EventHandler<Windows.UI.Xaml.RoutedEventArgs>
+          on_back_click);
 
   CloudProviderAccountModel Account;
   String Path;
+  Windows.Foundation.EventHandler<String> OnItemClick;
+  Windows.Foundation.EventHandler<Windows.UI.Xaml.RoutedEventArgs> OnBackClick;
 }
 }  // namespace coro_cloudbrowser_winrt

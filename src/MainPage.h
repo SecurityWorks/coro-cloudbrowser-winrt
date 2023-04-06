@@ -6,8 +6,8 @@
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
 struct MainPage : MainPageT<MainPage> {
-  void NavViewLoaded(Windows::Foundation::IInspectable const& sender,
-                     Windows::UI::Xaml::RoutedEventArgs const& args);
+  void NavViewLoaded(const Windows::Foundation::IInspectable& sender,
+                     const Windows::UI::Xaml::RoutedEventArgs& args);
 
   void OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs e);
 

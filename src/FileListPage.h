@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "FileListPage.g.h"
+#include "FileListPageModel.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
@@ -53,6 +54,9 @@ struct FileListPage : FileListPageT<FileListPage> {
 
   void RefreshClick(const Windows::Foundation::IInspectable&,
                     const Windows::UI::Xaml::RoutedEventArgs&);
+
+ private:
+  std::optional<coro_cloudbrowser_winrt::FileListPageModel> page_model_;
 };
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
