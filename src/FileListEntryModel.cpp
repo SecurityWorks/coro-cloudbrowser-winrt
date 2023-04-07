@@ -77,6 +77,24 @@ hstring FileListEntryModel::Filename() const {
       std::visit([](const auto& d) { return d.name; }, item_));
 }
 
+void FileListEntryModel::Timestamp(hstring) { throw hresult_not_implemented(); }
+
+hstring FileListEntryModel::Timestamp() const {
+  std::optional<int64_t> timestamp =
+      std::visit([](const auto& d) { return d.timestamp; }, item_);
+  if (!timestamp) {
+    return L"";
+  }
+  Windows::Globalization::DateTimeFormatting::DateTimeFormatter formatter(
+      L"{year.full}.{month.integer(2)}.{day.integer(2)} "
+      L"{hour.integer(2)}:{minute.integer(2)}",
+      Windows::Globalization::ApplicationLanguages::Languages(),
+      Windows::Globalization::GeographicRegion().CodeTwoLetter(),
+      Windows::Globalization::CalendarIdentifiers::Gregorian(),
+      Windows::Globalization::ClockIdentifiers::TwentyFourHour());
+  return formatter.Format(winrt::clock::from_time_t(*timestamp));
+}
+
 void FileListEntryModel::Thumbnail(hstring) { throw hresult_not_implemented(); }
 
 hstring FileListEntryModel::Thumbnail() const { return thumbnail_uri_; }

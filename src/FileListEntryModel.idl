@@ -5,6 +5,7 @@ namespace coro_cloudbrowser_winrt {
   String Id;
   String Filename;
   String Thumbnail;
+  String Timestamp;
   Windows.UI.Xaml.Visibility ThumbnailVisibility;
   String Icon;
   Windows.UI.Xaml.Visibility IconVisibility;

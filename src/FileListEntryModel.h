@@ -21,6 +21,9 @@ struct FileListEntryModel : FileListEntryModelT<FileListEntryModel> {
   void Filename(hstring);
   hstring Filename() const;
 
+  void Timestamp(hstring);
+  hstring Timestamp() const;
+
   void Thumbnail(hstring);
   hstring Thumbnail() const;
 
