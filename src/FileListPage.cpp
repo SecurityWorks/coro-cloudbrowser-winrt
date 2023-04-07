@@ -16,27 +16,18 @@ namespace winrt::coro_cloudbrowser_winrt::implementation {
 namespace {
 
 using ::coro::cloudstorage::util::AbstractCloudProvider;
-using ::coro::cloudstorage::util::CloudProviderAccount;
 using ::coro::cloudstorage::util::StrCat;
 using ::coro::http::EncodeUri;
 using ::winrt::Windows::Foundation::IAsyncAction;
 using ::winrt::Windows::Foundation::IInspectable;
 using ::winrt::Windows::UI::Xaml::RoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::UIElement;
+using ::winrt::Windows::UI::Xaml::Controls::Image;
 using ::winrt::Windows::UI::Xaml::Controls::ItemClickEventArgs;
 using ::winrt::Windows::UI::Xaml::Input::GettingFocusEventArgs;
 using ::winrt::Windows::UI::Xaml::Input::KeyRoutedEventArgs;
+using ::winrt::Windows::UI::Xaml::Media::Animation::Storyboard;
 using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
-
-std::string GetThumbnailUri(const CloudProviderAccount::Id& id,
-                            std::string_view path,
-                            const AbstractCloudProvider::Item& item) {
-  return fmt::format(
-      "http://localhost:12345/list/{}/{}{}?thumbnail=true", id.type,
-      EncodeUri(id.username),
-      StrCat(path, std::visit([](const auto& d) { return EncodeUri(d.name); },
-                              item)));
-}
 
 }  // namespace
 
@@ -60,10 +51,8 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
         /*page_token=*/std::nullopt, stop_source.get_token());
 
     for (auto item : page.items) {
-      auto thumbnail_uri =
-          GetThumbnailUri(account->Id(), to_string(page_model_->Path()), item);
       current_items.Append(winrt::make<FileListEntryModel>(
-          winrt::to_hstring(thumbnail_uri), std::move(item)));
+          account->Id(), to_string(page_model_->Path()), std::move(item)));
     }
   } catch (const coro::Exception& e) {
     std::stringstream stream;
@@ -97,8 +86,15 @@ void FileListPage::FileListEntryCheckboxChecked(const IInspectable&,
 void FileListPage::FileListEntryCheckboxUnchecked(const IInspectable&,
                                                   const RoutedEventArgs&) {}
 
-void FileListPage::FileListEntryThumbnailLoaded(const IInspectable&,
-                                                const RoutedEventArgs&) {}
+void FileListPage::FileListEntryThumbnailImageOpened(const IInspectable& sender,
+                                                     const RoutedEventArgs&) {
+  Image image = sender.as<Image>();
+  image.Visibility(Windows::UI::Xaml::Visibility::Visible);
+  image.Resources()
+      .Lookup(winrt::box_value(L"Animation"))
+      .as<Storyboard>()
+      .Begin();
+}
 
 void FileListPage::BackButtonClick(const IInspectable& sender,
                                    const RoutedEventArgs& args) {

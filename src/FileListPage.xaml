@@ -149,22 +149,23 @@
                             <Border Padding="0, 8, 0, 8">
                                 <Viewbox MaxWidth="64" MaxHeight="64">
                                     <SymbolIcon
-                                        x:Name="icon"
+                                        x:Name="Icon"
                                         Symbol="{Binding Icon}" 
                                         Visibility="{Binding IconVisibility}"/>
                                 </Viewbox>
                             </Border>
                             <Border Padding="0, 8, 12, 8">
                                 <Image
-                                    x:Name="thumbnail"
+                                    x:Name="Thumbnail"
                                     Source="{Binding Thumbnail}" 
+                                    Visibility="{Binding ThumbnailVisibility, Mode=TwoWay}"
                                     Width="64" Height="64"
                                     VerticalAlignment="Center" HorizontalAlignment="Center"
-                                    Loaded="FileListEntryThumbnailLoaded">
+                                    ImageOpened="FileListEntryThumbnailImageOpened">
                                     <Image.Resources>
-                                        <Storyboard x:Name="animation">
+                                        <Storyboard x:Name="Animation">
                                             <DoubleAnimation
-                                                Storyboard.TargetName="thumbnail"
+                                                Storyboard.TargetName="Thumbnail"
                                                 Storyboard.TargetProperty="Opacity"
                                                 From="0.0" To="1.0" Duration="0:0:0.25"/>
                                         </Storyboard>
