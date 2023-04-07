@@ -28,11 +28,22 @@ using ::winrt::Windows::UI::Xaml::Data::PropertyChangedEventHandler;
 std::string GetThumbnailUri(const CloudProviderAccount::Id& id,
                             std::string_view path,
                             const AbstractCloudProvider::Item& item) {
-  return fmt::format(
-      "http://localhost:12345/list/{}/{}{}?thumbnail=true", id.type,
-      EncodeUri(id.username),
-      StrCat(path, std::visit([](const auto& d) { return EncodeUri(d.name); },
-                              item)));
+  if (const auto* file = std::get_if<AbstractCloudProvider::File>(&item);
+      file && [&] {
+        switch (GetFileType(file->mime_type)) {
+          case FileType::kImage:
+          case FileType::kVideo:
+            return true;
+          default:
+            return false;
+        }
+      }()) {
+    return fmt::format("http://localhost:12345/list/{}/{}{}?thumbnail=true",
+                       id.type, EncodeUri(id.username),
+                       StrCat(path, EncodeUri(file->name)));
+  } else {
+    return "";
+  }
 }
 
 }  // namespace

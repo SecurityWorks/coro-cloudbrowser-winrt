@@ -161,6 +161,7 @@
                                     Visibility="{Binding ThumbnailVisibility, Mode=TwoWay}"
                                     Width="64" Height="64"
                                     VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    ImageFailed="FileListEntryThumbnailImageFailed"
                                     ImageOpened="FileListEntryThumbnailImageOpened">
                                     <Image.Resources>
                                         <Storyboard x:Name="Animation">

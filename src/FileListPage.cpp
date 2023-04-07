@@ -20,6 +20,7 @@ using ::coro::cloudstorage::util::StrCat;
 using ::coro::http::EncodeUri;
 using ::winrt::Windows::Foundation::IAsyncAction;
 using ::winrt::Windows::Foundation::IInspectable;
+using ::winrt::Windows::UI::Xaml::ExceptionRoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::RoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::UIElement;
 using ::winrt::Windows::UI::Xaml::Controls::Image;
@@ -94,6 +95,14 @@ void FileListPage::FileListEntryThumbnailImageOpened(const IInspectable& sender,
       .Lookup(winrt::box_value(L"Animation"))
       .as<Storyboard>()
       .Begin();
+}
+
+void FileListPage::FileListEntryThumbnailImageFailed(
+    const IInspectable&, const ExceptionRoutedEventArgs& args) {
+  std::stringstream sstream;
+  sstream << "Failed to load thumbnail: " << to_string(args.ErrorMessage())
+          << '\n';
+  OutputDebugStringA(sstream.str().c_str());
 }
 
 void FileListPage::BackButtonClick(const IInspectable& sender,
