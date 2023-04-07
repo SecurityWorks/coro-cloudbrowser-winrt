@@ -1,7 +1,7 @@
 namespace coro_cloudbrowser_winrt {
 [bindable][default_interface] runtimeclass FileListEntryModel
     : Windows.UI.Xaml.Data.INotifyPropertyChanged {
-  Int64 Size;
+  String Size;
   String Id;
   String Filename;
   String Thumbnail;

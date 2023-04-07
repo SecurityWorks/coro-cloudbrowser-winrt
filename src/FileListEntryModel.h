@@ -12,8 +12,8 @@ struct FileListEntryModel : FileListEntryModelT<FileListEntryModel> {
       std::string_view directory,
       coro::cloudstorage::util::AbstractCloudProvider::Item item);
 
-  void Size(int64_t);
-  int64_t Size() const;
+  void Size(hstring);
+  hstring Size() const;
 
   void Id(hstring);
   hstring Id() const;

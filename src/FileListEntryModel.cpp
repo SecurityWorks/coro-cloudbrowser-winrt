@@ -44,10 +44,23 @@ FileListEntryModel::FileListEntryModel(
     : thumbnail_uri_(to_hstring(GetThumbnailUri(account_id, directory, item))),
       item_(std::move(item)) {}
 
-void FileListEntryModel::Size(int64_t) { throw hresult_not_implemented(); }
+void FileListEntryModel::Size(hstring) { throw hresult_not_implemented(); }
 
-int64_t FileListEntryModel::Size() const {
-  return std::visit([](const auto& d) { return d.size.value_or(-1); }, item_);
+hstring FileListEntryModel::Size() const {
+  int64_t bytes =
+      std::visit([](const auto& d) { return d.size.value_or(-1); }, item_);
+  if (bytes < 0) {
+    return L"";
+  } else if (bytes < 1024) {
+    return to_hstring(fmt::format("{} B", bytes));
+  } else if (bytes < 1024 * 1024) {
+    return to_hstring(fmt::format("{:.2f} KB", bytes / 1024.f));
+  } else if (bytes < 1024 * 1024 * 1024) {
+    return to_hstring(fmt::format("{:.2f} MB", bytes / 1024.f / 1024.f));
+  } else {
+    return to_hstring(
+        fmt::format("{:.2f} GB", bytes / 1024.f / 1024.f / 1024.f));
+  }
 }
 
 void FileListEntryModel::Id(hstring) { throw hresult_not_implemented(); }
