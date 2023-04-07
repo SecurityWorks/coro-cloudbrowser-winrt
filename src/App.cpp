@@ -95,6 +95,9 @@ App::App()
                 coro_cloudbrowser_winrt::CloudProviderAccountModel>()) {
   Suspending({this, &App::OnSuspending});
 
+  RequiresPointerMode(
+      Windows::UI::Xaml::ApplicationRequiresPointerMode::WhenRequested);
+
 #if defined _DEBUG && \
     !defined DISABLE_XAML_GENERATED_BREAK_ON_UNHANDLED_EXCEPTION
   UnhandledException(
