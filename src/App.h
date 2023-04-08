@@ -13,13 +13,19 @@ namespace winrt::coro_cloudbrowser_winrt::implementation {
 
 struct App : AppT<App> {
   App();
+
   winrt::fire_and_forget OnLaunched(
       Windows::ApplicationModel::Activation::LaunchActivatedEventArgs);
-  void OnSuspending(const IInspectable &,
+
+  void OnSuspending(const Windows::Foundation::IInspectable &,
                     const Windows::ApplicationModel::SuspendingEventArgs &);
+
   void OnNavigationFailed(
-      const IInspectable &,
+      const Windows::Foundation::IInspectable &,
       const Windows::UI::Xaml::Navigation::NavigationFailedEventArgs &);
+
+  winrt::fire_and_forget OnActivated(
+      const Windows::ApplicationModel::Activation::IActivatedEventArgs &args);
 
  private:
   coro::Task<> RunHttpServer();

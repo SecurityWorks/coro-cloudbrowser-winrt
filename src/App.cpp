@@ -3,6 +3,9 @@
 #include <coro/cloudstorage/util/cloud_factory_context.h>
 #include <coro/promise.h>
 #include <direct.h>
+#include <fmt/format.h>
+
+#include <nlohmann/json.hpp>
 
 #include "EventLoopUtils.h"
 #include "MainPage.h"
@@ -15,21 +18,68 @@ namespace {
 using ::coro::RunTask;
 using ::coro::Task;
 using ::coro::cloudstorage::CloudFactory;
+using ::coro::cloudstorage::util::AuthData;
 using ::coro::cloudstorage::util::CloudFactoryConfig;
 using ::coro::cloudstorage::util::CloudFactoryContext;
 using ::coro::cloudstorage::util::CloudProviderAccount;
 using ::coro::util::EventLoop;
 using ::winrt::Windows::ApplicationModel::SuspendingEventArgs;
+using ::winrt::Windows::ApplicationModel::Activation::ActivationKind;
 using ::winrt::Windows::ApplicationModel::Activation::ApplicationExecutionState;
+using ::winrt::Windows::ApplicationModel::Activation::IActivatedEventArgs;
 using ::winrt::Windows::ApplicationModel::Activation::LaunchActivatedEventArgs;
+using ::winrt::Windows::ApplicationModel::Activation::
+    ProtocolActivatedEventArgs;
 using ::winrt::Windows::ApplicationModel::Core::CoreApplication;
 using ::winrt::Windows::Foundation::IAsyncAction;
+using ::winrt::Windows::Foundation::Uri;
 using ::winrt::Windows::Foundation::Collections::IObservableVector;
 using ::winrt::Windows::UI::Core::CoreDispatcherPriority;
 using ::winrt::Windows::UI::Xaml::UnhandledExceptionEventArgs;
 using ::winrt::Windows::UI::Xaml::Window;
 using ::winrt::Windows::UI::Xaml::Controls::Frame;
 using ::winrt::Windows::UI::Xaml::Navigation::NavigationFailedEventArgs;
+
+constexpr std::string_view kAuthData = R"js({
+    "google": {
+        "client_id": "459729347355-ubp1a4mvkrfqanpd05h1l1md5le868r6.apps.googleusercontent.com",
+        "client_secret": "",
+        "redirect_uri": "cloudbrowser.oauth:/google"
+    },
+    "box": {
+        "client_id": "8v59eo0k7cslcwilw4lu6ks53iga804i",
+        "client_secret": "nFQhObfGRzVjDZxXFooSNJ8TZykHBC5m",
+        "redirect_uri": "cloudbrowser.oauth://box"
+    },
+    "dropbox": {
+        "client_id": "archooga4lwron4",
+        "client_secret": "3at3evf2066tzmm",
+        "code_verifier": "thaiwarydnftbtnfapsfbrshnlczrqwxiirwtaiwkcaubyqazeazfuiodmqqvrou",
+        "redirect_uri": "cloudbrowser.oauth:/dropbox"
+    },
+    "hubic": {
+        "client_id": "api_hubic_Z32tg7yWDuJdyvgXnLtgJy2tRSYvjycR",
+        "client_secret": "h2xCpeHq3PCYdyTZty8PBKEUbFbDSslycIimwhE5XbfFGuS4HYU93OiRQX5P40EO"
+    },
+    "mega": {
+        "api_key": "ZVhB0Czb",
+        "app_name": "coro-cloudstorage"
+    },
+    "onedrive": {
+        "client_id": "a09406c3-33da-4b91-b24b-aad3c5d118d5",
+        "client_secret": "",
+        "redirect_uri": "cloudbrowser.oauth://onedrive"
+    },
+    "pcloud": {
+        "client_id": "OwbUz84peXz",
+        "client_secret": "imi0pm1eigjQ3OgqfoJSoHS7bqgX"
+    },
+    "yandex": {
+        "client_id" : "d8e5d26d6097441bbd8c3eeff7772643",
+        "client_secret" : "3aac1fc76ee44f4586b1cb878111465f",
+        "redirect_uri": "cloudbrowser.oauth:/yandex"
+    }
+  })js";
 
 class AccountListener {
  public:
@@ -81,6 +131,8 @@ CreateCloudProviderTypes(const CloudFactory& factory) {
   return types;
 }
 
+nlohmann::json GetAuthData() { return nlohmann::json::parse(kAuthData); }
+
 }  // namespace
 
 Task<> App::RunHttpServer() {
@@ -103,7 +155,10 @@ Task<> App::RunHttpServer() {
 /// WinMain().
 /// </summary>
 App::App()
-    : context_(&event_loop_, CloudFactoryConfig()),
+    : context_(&event_loop_,
+               CloudFactoryConfig{.auth_data =
+                                      AuthData(CORO_CLOUDSTORAGE_REDIRECT_URI,
+                                               GetAuthData())}),
       accounts_(single_threaded_observable_vector<
                 coro_cloudbrowser_winrt::CloudProviderAccountModel>()),
       provider_types_(single_threaded_observable_vector<
@@ -214,6 +269,19 @@ void App::OnNavigationFailed(const IInspectable&,
                              const NavigationFailedEventArgs& e) {
   throw hresult_error(
       E_FAIL, hstring(L"Failed to load Page ") + e.SourcePageType().Name);
+}
+
+winrt::fire_and_forget App::OnActivated(const IActivatedEventArgs& args) {
+  if (args.Kind() == ActivationKind::Protocol) {
+    auto protocol_event_args = args.as<ProtocolActivatedEventArgs>();
+    auto uri = protocol_event_args.Uri();
+    hstring code = uri.QueryParsed().GetFirstValueByName(L"code");
+    Windows::Web::Http::HttpClient http;
+    co_await http.GetAsync(Uri(to_hstring(fmt::format(
+        CORO_CLOUDSTORAGE_REDIRECT_URI "/auth{}?code={}",
+        to_string(!uri.Host().empty() ? (L"/" + uri.Host()) : uri.Path()),
+        to_string(code)))));
+  }
 }
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

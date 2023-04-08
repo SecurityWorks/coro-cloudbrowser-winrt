@@ -22,12 +22,19 @@ void AddAccountPage::OnNavigatedTo(const NavigationEventArgs& args) {
           .as<IVector<coro_cloudbrowser_winrt::CloudProviderTypeModel>>());
 }
 
-void AddAccountPage::ItemListViewItemClick(const IInspectable&,
-                                           const ItemClickEventArgs& e) {
+winrt::fire_and_forget AddAccountPage::ItemListViewItemClick(
+    const IInspectable&, const ItemClickEventArgs& e) {
   auto type =
       e.ClickedItem().as<coro_cloudbrowser_winrt::CloudProviderTypeModel>();
-  Frame().Navigate(xaml_typename<coro_cloudbrowser_winrt::WebViewPage>(),
-                   winrt::box_value(type.AuthorizationUrl()));
+  hstring authorization_url = type.AuthorizationUrl();
+  if (std::wstring_view(authorization_url).find(L"cloudbrowser.oauth") !=
+      std::wstring_view::npos) {
+    co_await Windows::System::Launcher::LaunchUriAsync(
+        Windows::Foundation::Uri(authorization_url));
+  } else {
+    Frame().Navigate(xaml_typename<coro_cloudbrowser_winrt::WebViewPage>(),
+                     winrt::box_value(authorization_url));
+  }
 }
 
 void AddAccountPage::ItemListViewKeyDown(const IInspectable&,
