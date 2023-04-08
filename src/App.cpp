@@ -4,6 +4,7 @@
 #include <coro/promise.h>
 #include <direct.h>
 
+#include "EventLoopUtils.h"
 #include "MainPage.h"
 #include "MainPageModel.h"
 
@@ -86,7 +87,8 @@ Task<> App::RunHttpServer() {
   try {
     auto http_server =
         context_.CreateHttpServer(AccountListener(&event_loop_, accounts_));
-    co_await semaphore_;
+    init_semaphore_.SetValue();
+    co_await quit_semaphore_;
     co_await http_server.Quit();
   } catch (const coro::Exception& exception) {
     std::stringstream stream;
@@ -130,11 +132,16 @@ App::App()
 /// specific file.
 /// </summary>
 /// <param name="e">Details about the launch request and process.</param>
-void App::OnLaunched(LaunchActivatedEventArgs const& e) {
+winrt::fire_and_forget App::OnLaunched(LaunchActivatedEventArgs e) {
   thread_ = std::async(std::launch::async, [&] {
     RunTask(RunHttpServer());
     event_loop_.EnterLoop();
   });
+
+  winrt::apartment_context ui_thread;
+  co_await coro::cloudbrowser::util::SwitchTo(&event_loop_);
+  co_await init_semaphore_;
+  co_await ui_thread;
 
   Frame root_frame{nullptr};
   auto content = Window::Current().Content();
@@ -193,8 +200,8 @@ void App::OnLaunched(LaunchActivatedEventArgs const& e) {
 /// </summary>
 /// <param name="sender">The source of the suspend request.</param>
 /// <param name="e">Details about the suspend request.</param>
-void App::OnSuspending([[maybe_unused]] IInspectable const& sender,
-                       [[maybe_unused]] SuspendingEventArgs const& e) {
+void App::OnSuspending([[maybe_unused]] const IInspectable& sender,
+                       [[maybe_unused]] const SuspendingEventArgs& e) {
   // Save application state and stop any background activity
 }
 
@@ -203,8 +210,8 @@ void App::OnSuspending([[maybe_unused]] IInspectable const& sender,
 /// </summary>
 /// <param name="sender">The Frame which failed navigation</param>
 /// <param name="e">Details about the navigation failure</param>
-void App::OnNavigationFailed(IInspectable const&,
-                             NavigationFailedEventArgs const& e) {
+void App::OnNavigationFailed(const IInspectable&,
+                             const NavigationFailedEventArgs& e) {
   throw hresult_error(
       E_FAIL, hstring(L"Failed to load Page ") + e.SourcePageType().Name);
 }

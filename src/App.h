@@ -13,20 +13,21 @@ namespace winrt::coro_cloudbrowser_winrt::implementation {
 
 struct App : AppT<App> {
   App();
-  void OnLaunched(
-      Windows::ApplicationModel::Activation::LaunchActivatedEventArgs const &);
-  void OnSuspending(IInspectable const &,
-                    Windows::ApplicationModel::SuspendingEventArgs const &);
+  winrt::fire_and_forget OnLaunched(
+      Windows::ApplicationModel::Activation::LaunchActivatedEventArgs);
+  void OnSuspending(const IInspectable &,
+                    const Windows::ApplicationModel::SuspendingEventArgs &);
   void OnNavigationFailed(
-      IInspectable const &,
-      Windows::UI::Xaml::Navigation::NavigationFailedEventArgs const &);
+      const IInspectable &,
+      const Windows::UI::Xaml::Navigation::NavigationFailedEventArgs &);
 
  private:
   coro::Task<> RunHttpServer();
 
   coro::util::EventLoop event_loop_;
   coro::cloudstorage::util::CloudFactoryContext context_;
-  coro::Promise<void> semaphore_;
+  coro::Promise<void> init_semaphore_;
+  coro::Promise<void> quit_semaphore_;
   winrt::Windows::Foundation::Collections::IObservableVector<
       coro_cloudbrowser_winrt::CloudProviderAccountModel>
       accounts_;

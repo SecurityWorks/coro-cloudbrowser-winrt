@@ -104,6 +104,17 @@ void MainPage::UpdateMenu() {
     item.Icon(SymbolIcon(Symbol::Add));
     NavigationView().MenuItems().Append(std::move(item));
   }
+
+  auto accounts = model_->Accounts();
+  if (accounts.Size() > 0) {
+    NavigateEventHandler(ContentFrame(), accounts.GetAt(accounts.Size() - 1))(
+        /*sender=*/nullptr,
+        /*path=*/L"/");
+  } else {
+    ContentFrame().Navigate(
+        xaml_typename<coro_cloudbrowser_winrt::AddAccountPage>(),
+        model_->ProviderTypes());
+  }
 }
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
