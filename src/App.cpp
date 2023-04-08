@@ -5,6 +5,7 @@
 #include <direct.h>
 
 #include "MainPage.h"
+#include "MainPageModel.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
@@ -12,6 +13,7 @@ namespace {
 
 using ::coro::RunTask;
 using ::coro::Task;
+using ::coro::cloudstorage::CloudFactory;
 using ::coro::cloudstorage::util::CloudFactoryConfig;
 using ::coro::cloudstorage::util::CloudFactoryContext;
 using ::coro::cloudstorage::util::CloudProviderAccount;
@@ -69,6 +71,15 @@ class AccountListener {
       accounts_;
 };
 
+std::vector<coro_cloudbrowser_winrt::CloudProviderTypeModel>
+CreateCloudProviderTypes(const CloudFactory& factory) {
+  std::vector<coro_cloudbrowser_winrt::CloudProviderTypeModel> types;
+  for (auto type : factory.GetSupportedCloudProviders()) {
+    types.push_back(winrt::make<CloudProviderTypeModel>(factory, type));
+  }
+  return types;
+}
+
 }  // namespace
 
 Task<> App::RunHttpServer() {
@@ -92,7 +103,10 @@ Task<> App::RunHttpServer() {
 App::App()
     : context_(&event_loop_, CloudFactoryConfig()),
       accounts_(single_threaded_observable_vector<
-                coro_cloudbrowser_winrt::CloudProviderAccountModel>()) {
+                coro_cloudbrowser_winrt::CloudProviderAccountModel>()),
+      provider_types_(single_threaded_observable_vector<
+                      coro_cloudbrowser_winrt::CloudProviderTypeModel>(
+          CreateCloudProviderTypes(*context_.factory()))) {
   Suspending({this, &App::OnSuspending});
 
   RequiresPointerMode(
@@ -147,8 +161,9 @@ void App::OnLaunched(LaunchActivatedEventArgs const& e) {
         // When the navigation stack isn't restored navigate to the first page,
         // configuring the new page by passing required information as a
         // navigation parameter
-        root_frame.Navigate(xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
-                            accounts_);
+        root_frame.Navigate(
+            xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
+            winrt::make<MainPageModel>(accounts_, provider_types_));
       }
       // Place the frame in the current Window
       Window::Current().Content(root_frame);
@@ -161,8 +176,9 @@ void App::OnLaunched(LaunchActivatedEventArgs const& e) {
         // When the navigation stack isn't restored navigate to the first page,
         // configuring the new page by passing required information as a
         // navigation parameter
-        root_frame.Navigate(xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
-                            accounts_);
+        root_frame.Navigate(
+            xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
+            winrt::make<MainPageModel>(accounts_, provider_types_));
       }
       // Ensure the current window is active
       Window::Current().Activate();

@@ -4,7 +4,16 @@
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
-struct AddAccountPage : AddAccountPageT<AddAccountPage> {};
+struct AddAccountPage : AddAccountPageT<AddAccountPage> {
+  void OnNavigatedTo(
+      const Windows::UI::Xaml::Navigation::NavigationEventArgs& args);
+
+  void ItemListViewItemClick(
+      const Windows::Foundation::IInspectable& sender,
+      const Windows::UI::Xaml::Controls::ItemClickEventArgs&);
+  void ItemListViewKeyDown(const Windows::Foundation::IInspectable& sender,
+                           const Windows::UI::Xaml::Input::KeyRoutedEventArgs&);
+};
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
 

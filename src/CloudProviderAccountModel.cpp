@@ -89,7 +89,8 @@ CloudProviderAccountModel::CloudProviderAccountModel(
       account_(std::move(account)),
       label_(to_hstring(account_->username())),
       image_source_(to_hstring(fmt::format(
-          "http://localhost:12345/static/{}.png", account_->type()))) {}
+          CORO_CLOUDSTORAGE_REDIRECT_URI "/static/{}.png", account_->type()))) {
+}
 
 hstring CloudProviderAccountModel::ImageSource() const { return image_source_; }
 

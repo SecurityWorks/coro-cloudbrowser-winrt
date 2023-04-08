@@ -1,0 +1,12 @@
+import "CloudProviderAccountModel.idl";
+import "CloudProviderTypeModel.idl";
+
+namespace coro_cloudbrowser_winrt {
+[bindable][default_interface] runtimeclass MainPageModel {
+  MainPageModel(IObservableVector<CloudProviderAccountModel> accounts,
+                IVector<CloudProviderTypeModel> provider_types);
+
+  IObservableVector<CloudProviderAccountModel> Accounts;
+  IVector<CloudProviderTypeModel> ProviderTypes;
+}
+}  // namespace coro_cloudbrowser_winrt

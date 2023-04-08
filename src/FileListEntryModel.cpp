@@ -38,9 +38,9 @@ std::string GetThumbnailUri(const CloudProviderAccount::Id& id,
             return false;
         }
       }()) {
-    return fmt::format("http://localhost:12345/list/{}/{}{}?thumbnail=true",
-                       id.type, EncodeUri(id.username),
-                       StrCat(path, EncodeUri(file->name)));
+    return fmt::format(
+        CORO_CLOUDSTORAGE_REDIRECT_URI "/list/{}/{}{}?thumbnail=true", id.type,
+        EncodeUri(id.username), StrCat(path, EncodeUri(file->name)));
   } else {
     return "";
   }

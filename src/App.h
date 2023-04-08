@@ -7,6 +7,7 @@
 
 #include "App.xaml.g.h"
 #include "CloudProviderAccountModel.h"
+#include "CloudProviderTypeModel.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
@@ -29,6 +30,9 @@ struct App : AppT<App> {
   winrt::Windows::Foundation::Collections::IObservableVector<
       coro_cloudbrowser_winrt::CloudProviderAccountModel>
       accounts_;
+  winrt::Windows::Foundation::Collections::IVector<
+      coro_cloudbrowser_winrt::CloudProviderTypeModel>
+      provider_types_;
   std::future<void> thread_;
 };
 

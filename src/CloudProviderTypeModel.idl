@@ -1,0 +1,7 @@
+namespace coro_cloudbrowser_winrt {
+[bindable][default_interface] runtimeclass CloudProviderTypeModel {
+  String Name;
+  String ImageSource;
+  String AuthorizationUrl;
+}
+}  // namespace coro_cloudbrowser_winrt

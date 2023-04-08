@@ -5,6 +5,7 @@
 #include "FileListPage.h"
 #include "FileListPageModel.h"
 #include "MainPage.g.cpp"
+#include "WebViewPage.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
@@ -43,19 +44,17 @@ struct NavigateEventHandler {
 
 }  // namespace
 
-void MainPage::OnNavigatedTo(NavigationEventArgs e) {
-  accounts_ = e.Parameter()
-                  .as<IObservableVector<
-                      coro_cloudbrowser_winrt::CloudProviderAccountModel>>();
+void MainPage::OnNavigatedTo(const NavigationEventArgs& e) {
+  model_ = e.Parameter().as<coro_cloudbrowser_winrt::MainPageModel>();
 }
 
-void MainPage::OnNavigatedFrom(NavigationEventArgs e) {
-  accounts_.VectorChanged(accounts_changed_);
-  accounts_ = nullptr;
+void MainPage::OnNavigatedFrom(const NavigationEventArgs&) {
+  model_->Accounts().VectorChanged(accounts_changed_);
+  model_.reset();
 }
 
 void MainPage::NavViewLoaded(IInspectable const&, RoutedEventArgs const&) {
-  accounts_changed_ = accounts_.VectorChanged(
+  accounts_changed_ = model_->Accounts().VectorChanged(
       [&](const auto& /*sender*/, const auto& /*args*/) { UpdateMenu(); });
   UpdateMenu();
 }
@@ -63,12 +62,19 @@ void MainPage::NavViewLoaded(IInspectable const&, RoutedEventArgs const&) {
 void MainPage::MenuItemInvoked(
     const Windows::UI::Xaml::Controls::NavigationView& sender,
     const NavigationViewItemInvokedEventArgs& args) {
+  if (args.IsSettingsInvoked()) {
+    ContentFrame().Navigate(
+        xaml_typename<coro_cloudbrowser_winrt::WebViewPage>(),
+        box_value(winrt::to_hstring(CORO_CLOUDSTORAGE_REDIRECT_URI)));
+    return;
+  }
   for (const auto& item : sender.MenuItems()) {
     auto entry = item.try_as<NavigationViewItem>();
     if (entry && entry.Content() == args.InvokedItem()) {
       if (entry.Tag().try_as<hstring>() == kAddAccountPageTag) {
         ContentFrame().Navigate(
-            xaml_typename<coro_cloudbrowser_winrt::AddAccountPage>());
+            xaml_typename<coro_cloudbrowser_winrt::AddAccountPage>(),
+            model_->ProviderTypes());
       } else if (auto account = args.InvokedItem()
                                     .try_as<coro_cloudbrowser_winrt::
                                                 CloudProviderAccountModel>()) {
@@ -82,7 +88,7 @@ void MainPage::MenuItemInvoked(
 void MainPage::UpdateMenu() {
   NavigationView().MenuItems().Clear();
 
-  for (const auto& account : accounts_) {
+  for (const auto& account : model_->Accounts()) {
     NavigationViewItem item;
     item.ContentTemplate(NavViewMenuItemTemplate());
     item.Content(account);
