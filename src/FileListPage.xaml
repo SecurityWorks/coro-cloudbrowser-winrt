@@ -21,7 +21,7 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <Border Grid.Row="0" Grid.Column="0" Height="10">
-            <ProgressBar x:Name="progress_bar" IsIndeterminate="True" Visibility="Collapsed"/>
+            <ProgressBar x:Name="ProgressBar" IsIndeterminate="True" Visibility="Collapsed"/>
         </Border>
         <Grid Grid.Row="1" Grid.Column="0">
             <Grid.RowDefinitions>

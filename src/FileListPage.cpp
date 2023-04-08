@@ -6,6 +6,7 @@
 #include <coro/cloudstorage/util/cloud_provider_utils.h>
 #include <coro/cloudstorage/util/string_utils.h>
 #include <coro/http/http_parse.h>
+#include <coro/util/raii_utils.h>
 #include <fmt/format.h>
 
 #include "FileListEntryModel.h"
@@ -18,11 +19,13 @@ namespace {
 using ::coro::cloudstorage::util::AbstractCloudProvider;
 using ::coro::cloudstorage::util::StrCat;
 using ::coro::http::EncodeUri;
+using ::coro::util::AtScopeExit;
 using ::winrt::Windows::Foundation::IAsyncAction;
 using ::winrt::Windows::Foundation::IInspectable;
 using ::winrt::Windows::UI::Xaml::ExceptionRoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::RoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::UIElement;
+using ::winrt::Windows::UI::Xaml::Visibility;
 using ::winrt::Windows::UI::Xaml::Controls::Image;
 using ::winrt::Windows::UI::Xaml::Controls::ItemClickEventArgs;
 using ::winrt::Windows::UI::Xaml::Input::GettingFocusEventArgs;
@@ -36,6 +39,9 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   auto current_items = winrt::single_threaded_observable_vector<
       coro_cloudbrowser_winrt::FileListEntryModel>();
   FileList().ItemsSource(current_items);
+  ProgressBar().Visibility(Visibility::Visible);
+  auto at_exit =
+      AtScopeExit([&] { ProgressBar().Visibility(Visibility::Collapsed); });
 
   page_model_ = e.Parameter().as<coro_cloudbrowser_winrt::FileListPageModel>();
   auto account = page_model_->Account().as<CloudProviderAccountModel>();
