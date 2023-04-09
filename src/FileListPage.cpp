@@ -18,6 +18,7 @@ namespace {
 
 using ::coro::cloudstorage::util::AbstractCloudProvider;
 using ::coro::cloudstorage::util::StrCat;
+using ::coro::http::DecodeUri;
 using ::coro::http::EncodeUri;
 using ::coro::util::AtScopeExit;
 using ::winrt::Windows::Foundation::IAsyncAction;
@@ -40,26 +41,30 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
       coro_cloudbrowser_winrt::FileListEntryModel>();
   FileList().ItemsSource(current_items);
   ProgressBar().Visibility(Visibility::Visible);
-  auto at_exit =
-      AtScopeExit([&] { ProgressBar().Visibility(Visibility::Collapsed); });
+  auto at_exit = AtScopeExit([progress_bar = ProgressBar()] {
+    progress_bar.Visibility(Visibility::Collapsed);
+  });
 
   page_model_ = e.Parameter().as<coro_cloudbrowser_winrt::FileListPageModel>();
   auto account = page_model_->Account().as<CloudProviderAccountModel>();
+  auto path = page_model_->Path();
 
   concurrency::cancellation_token_source stop_source;
   auto stop_token = co_await winrt::get_cancellation_token();
   stop_token.callback([stop_source] { stop_source.cancel(); });
 
+  Path().Text(winrt::to_hstring(DecodeUri(winrt::to_string(path))));
+
   try {
-    auto directory = co_await account->GetItemByPath(
-        winrt::to_string(page_model_->Path()), stop_source.get_token());
+    auto directory = co_await account->GetItemByPath(winrt::to_string(path),
+                                                     stop_source.get_token());
     auto page = co_await account->ListDirectoryPage(
         std::get<AbstractCloudProvider::Directory>(directory),
         /*page_token=*/std::nullopt, stop_source.get_token());
 
     for (auto item : page.items) {
       current_items.Append(winrt::make<FileListEntryModel>(
-          account->Id(), to_string(page_model_->Path()), std::move(item)));
+          account->Id(), to_string(path), std::move(item)));
     }
   } catch (const coro::Exception& e) {
     std::stringstream stream;
@@ -67,8 +72,6 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
     stream << winrt::to_string(page_model_->Path()) << '\n';
     OutputDebugStringA(stream.str().c_str());
   }
-
-  co_return;
 }
 
 void FileListPage::OnGettingFocus(const UIElement&,

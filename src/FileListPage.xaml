@@ -125,7 +125,7 @@
                 </AppBarButton>
             </Grid>
         </Grid>
-        <TextBlock Grid.Row="2" Grid.Column="0" Margin="16" x:Name="path"/>
+        <TextBlock Grid.Row="2" Grid.Column="0" Margin="16" x:Name="Path"/>
         <ListView x:Name="FileList"
                   Grid.Row="3" Grid.Column="0"
                   IsItemClickEnabled="True"
