@@ -23,6 +23,7 @@ using ::coro::http::EncodeUri;
 using ::coro::util::AtScopeExit;
 using ::winrt::Windows::Foundation::IAsyncAction;
 using ::winrt::Windows::Foundation::IInspectable;
+using ::winrt::Windows::UI::Xaml::DependencyProperty;
 using ::winrt::Windows::UI::Xaml::ExceptionRoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::RoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::UIElement;
@@ -105,12 +106,16 @@ void FileListPage::FileListEntryCheckboxUnchecked(const IInspectable&,
 
 void FileListPage::FileListEntryThumbnailImageOpened(const IInspectable& sender,
                                                      const RoutedEventArgs&) {
-  Image image = sender.as<Image>();
-  image.Visibility(Windows::UI::Xaml::Visibility::Visible);
-  image.Resources()
-      .Lookup(winrt::box_value(L"Animation"))
-      .as<Storyboard>()
-      .Begin();
+  auto image = sender.as<Image>();
+  auto data = image.DataContext().as<FileListEntryModel>();
+  if (data) {
+    data->ThumbnailVisibility(Visibility::Visible);
+    data->IconVisibility(Visibility::Collapsed);
+    image.Resources()
+        .Lookup(winrt::box_value(L"Animation"))
+        .as<Storyboard>()
+        .Begin();
+  }
 }
 
 void FileListPage::FileListEntryThumbnailImageFailed(
@@ -119,6 +124,19 @@ void FileListPage::FileListEntryThumbnailImageFailed(
   sstream << "Failed to load thumbnail: " << to_string(args.ErrorMessage())
           << '\n';
   OutputDebugStringA(sstream.str().c_str());
+}
+
+void FileListPage::FileListEntryThumbnailImageLoaded(const IInspectable& sender,
+                                                     const RoutedEventArgs&) {
+  sender.as<Image>().RegisterPropertyChangedCallback(
+      Image::SourceProperty(), [](const IInspectable& sender,
+                                  const DependencyProperty&) {
+        auto data = sender.as<Image>().DataContext().as<FileListEntryModel>();
+        if (data) {
+          data->ThumbnailVisibility(Visibility::Collapsed);
+          data->IconVisibility(Visibility::Visible);
+        }
+      });
 }
 
 void FileListPage::BackButtonClick(const IInspectable&,

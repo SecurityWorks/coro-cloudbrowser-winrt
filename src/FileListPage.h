@@ -34,6 +34,10 @@ struct FileListPage : FileListPageT<FileListPage> {
       const Windows::Foundation::IInspectable&,
       const Windows::UI::Xaml::ExceptionRoutedEventArgs&);
 
+  void FileListEntryThumbnailImageLoaded(
+      const Windows::Foundation::IInspectable&,
+      const Windows::UI::Xaml::RoutedEventArgs&);
+
   void BackButtonClick(const Windows::Foundation::IInspectable&,
                        const Windows::UI::Xaml::RoutedEventArgs&);
 

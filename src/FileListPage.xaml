@@ -158,9 +158,11 @@
                                 <Image
                                     x:Name="Thumbnail"
                                     Source="{Binding Thumbnail}" 
-                                    Visibility="{Binding ThumbnailVisibility, Mode=TwoWay}"
+                                    Visibility="{Binding ThumbnailVisibility}"
                                     Width="64" Height="64"
                                     VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    DataContext="{Binding}"
+                                    Loaded="FileListEntryThumbnailImageLoaded"
                                     ImageFailed="FileListEntryThumbnailImageFailed"
                                     ImageOpened="FileListEntryThumbnailImageOpened">
                                     <Image.Resources>

@@ -110,9 +110,10 @@ void FileListEntryModel::Thumbnail(hstring) { throw hresult_not_implemented(); }
 hstring FileListEntryModel::Thumbnail() const { return thumbnail_uri_; }
 
 void FileListEntryModel::ThumbnailVisibility(Visibility visibility) {
-  thumbnail_visibility_ = visibility;
-  IconVisibility(visibility == Visibility::Collapsed ? Visibility::Visible
-                                                     : Visibility::Collapsed);
+  if (thumbnail_visibility_ != visibility) {
+    thumbnail_visibility_ = visibility;
+    property_changed_(*this, PropertyChangedEventArgs(L"ThumbnailVisibility"));
+  }
 }
 
 Visibility FileListEntryModel::ThumbnailVisibility() const {
