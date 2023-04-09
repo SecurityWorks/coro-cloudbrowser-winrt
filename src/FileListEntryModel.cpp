@@ -17,7 +17,6 @@ namespace {
 
 using ::coro::cloudstorage::util::AbstractCloudProvider;
 using ::coro::cloudstorage::util::CloudProviderAccount;
-using ::coro::cloudstorage::util::FileType;
 using ::coro::cloudstorage::util::GetFileType;
 using ::coro::cloudstorage::util::StrCat;
 using ::coro::http::EncodeUri;
@@ -31,8 +30,8 @@ std::string GetThumbnailUri(const CloudProviderAccount::Id& id,
   if (const auto* file = std::get_if<AbstractCloudProvider::File>(&item);
       file && [&] {
         switch (GetFileType(file->mime_type)) {
-          case FileType::kImage:
-          case FileType::kVideo:
+          case coro::cloudstorage::util::FileType::kImage:
+          case coro::cloudstorage::util::FileType::kVideo:
             return true;
           default:
             return false;
@@ -121,20 +120,17 @@ Visibility FileListEntryModel::ThumbnailVisibility() const {
 }
 
 hstring FileListEntryModel::Icon() const {
-  if (std::holds_alternative<AbstractCloudProvider::Directory>(item_)) {
-    return L"Folder";
-  } else {
-    switch (
-        GetFileType(std::get<AbstractCloudProvider::File>(item_).mime_type)) {
-      case FileType::kAudio:
-        return L"Audio";
-      case FileType::kVideo:
-        return L"Video";
-      case FileType::kImage:
-        return L"Camera";
-      default:
-        return L"Document";
-    }
+  switch (Type()) {
+    case FileType::kDirectory:
+      return L"Folder";
+    case FileType::kAudio:
+      return L"Audio";
+    case FileType::kVideo:
+      return L"Video";
+    case FileType::kImage:
+      return L"Camera";
+    default:
+      return L"Document";
   }
 }
 
@@ -150,6 +146,26 @@ void FileListEntryModel::IconVisibility(Visibility visibility) {
 Visibility FileListEntryModel::IconVisibility() const {
   return icon_visibility_;
 }
+
+FileType FileListEntryModel::Type() const {
+  if (std::holds_alternative<AbstractCloudProvider::Directory>(item_)) {
+    return FileType::kDirectory;
+  } else {
+    switch (
+        GetFileType(std::get<AbstractCloudProvider::File>(item_).mime_type)) {
+      case coro::cloudstorage::util::FileType::kAudio:
+        return FileType::kAudio;
+      case coro::cloudstorage::util::FileType::kVideo:
+        return FileType::kVideo;
+      case coro::cloudstorage::util::FileType::kImage:
+        return FileType::kImage;
+      default:
+        return FileType::kUnknown;
+    }
+  }
+}
+
+void FileListEntryModel::Type(FileType) { throw hresult_not_implemented(); }
 
 winrt::event_token FileListEntryModel::PropertyChanged(
     const PropertyChangedEventHandler& value) {

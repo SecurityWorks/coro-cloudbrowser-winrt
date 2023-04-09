@@ -36,6 +36,9 @@ struct FileListEntryModel : FileListEntryModelT<FileListEntryModel> {
   void IconVisibility(Windows::UI::Xaml::Visibility);
   Windows::UI::Xaml::Visibility IconVisibility() const;
 
+  FileType Type() const;
+  void Type(FileType);
+
   winrt::event_token PropertyChanged(
       const Windows::UI::Xaml::Data::PropertyChangedEventHandler& value);
   void PropertyChanged(const winrt::event_token& token);

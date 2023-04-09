@@ -25,23 +25,6 @@ using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
 
 constexpr std::wstring_view kAddAccountPageTag = L"account";
 
-struct NavigateEventHandler {
-  void operator()(const IInspectable&, hstring path) {
-    frame.Navigate(
-        xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
-        winrt::make<FileListPageModel>(
-            account, std::move(path), NavigateEventHandler{frame, account},
-            [frame = this->frame](const IInspectable&, const RoutedEventArgs&) {
-              if (frame.CanGoBack()) {
-                frame.GoBack();
-              }
-            }));
-  }
-
-  Windows::UI::Xaml::Controls::Frame frame;
-  coro_cloudbrowser_winrt::CloudProviderAccountModel account;
-};
-
 }  // namespace
 
 void MainPage::OnNavigatedTo(const NavigationEventArgs& e) {
@@ -78,8 +61,9 @@ void MainPage::MenuItemInvoked(
       } else if (auto account = args.InvokedItem()
                                     .try_as<coro_cloudbrowser_winrt::
                                                 CloudProviderAccountModel>()) {
-        NavigateEventHandler(ContentFrame(), std::move(account))(sender,
-                                                                 /*path=*/L"/");
+        ContentFrame().Navigate(
+            xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
+            winrt::make<FileListPageModel>(std::move(account), /*path=*/L"/"));
       }
     }
   }
@@ -107,9 +91,10 @@ void MainPage::UpdateMenu() {
 
   auto accounts = model_->Accounts();
   if (accounts.Size() > 0) {
-    NavigateEventHandler(ContentFrame(), accounts.GetAt(accounts.Size() - 1))(
-        /*sender=*/nullptr,
-        /*path=*/L"/");
+    ContentFrame().Navigate(
+        xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
+        winrt::make<FileListPageModel>(accounts.GetAt(accounts.Size() - 1),
+                                       /*path=*/L"/"));
   } else {
     ContentFrame().Navigate(
         xaml_typename<coro_cloudbrowser_winrt::AddAccountPage>(),

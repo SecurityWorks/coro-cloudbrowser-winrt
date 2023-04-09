@@ -1,4 +1,7 @@
 namespace coro_cloudbrowser_winrt {
+
+enum FileType { kDirectory, kAudio, kImage, kVideo, kUnknown };
+
 [bindable][default_interface] runtimeclass FileListEntryModel
     : Windows.UI.Xaml.Data.INotifyPropertyChanged {
   String Size;
@@ -9,5 +12,6 @@ namespace coro_cloudbrowser_winrt {
   Windows.UI.Xaml.Visibility ThumbnailVisibility;
   String Icon;
   Windows.UI.Xaml.Visibility IconVisibility;
+  FileType Type;
 }
 }  // namespace coro_cloudbrowser_winrt

@@ -84,13 +84,17 @@ void FileListPage::OnKeyDown(const IInspectable&, const KeyRoutedEventArgs&) {}
 
 void FileListPage::OnKeyDown(const KeyRoutedEventArgs&) {}
 
-void FileListPage::FileListEntryClick(const IInspectable& sender,
+void FileListPage::FileListEntryClick(const IInspectable&,
                                       const ItemClickEventArgs& e) {
   auto entry = e.ClickedItem().as<FileListEntryModel>();
-  winrt::hstring path = winrt::to_hstring(
-      StrCat(winrt::to_string(page_model_->Path()),
-             EncodeUri(winrt::to_string(entry->Filename())), '/'));
-  page_model_->OnItemClick()(sender, path);
+  if (entry->Type() == FileType::kDirectory) {
+    winrt::hstring path = winrt::to_hstring(
+        StrCat(winrt::to_string(page_model_->Path()),
+               EncodeUri(winrt::to_string(entry->Filename())), '/'));
+    Frame().Navigate(xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
+                     winrt::make<FileListPageModel>(page_model_->Account(),
+                                                    std::move(path)));
+  }
 }
 
 void FileListPage::FileListEntryCheckboxChecked(const IInspectable&,
@@ -117,9 +121,11 @@ void FileListPage::FileListEntryThumbnailImageFailed(
   OutputDebugStringA(sstream.str().c_str());
 }
 
-void FileListPage::BackButtonClick(const IInspectable& sender,
-                                   const RoutedEventArgs& args) {
-  page_model_->OnBackClick()(sender, args);
+void FileListPage::BackButtonClick(const IInspectable&,
+                                   const RoutedEventArgs&) {
+  if (Frame().CanGoBack()) {
+    Frame().GoBack();
+  }
 }
 
 void FileListPage::CreateDirectoryClick(const IInspectable&,
