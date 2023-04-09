@@ -58,14 +58,17 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   try {
     auto directory = co_await account->GetItemByPath(winrt::to_string(path),
                                                      stop_source.get_token());
-    auto page = co_await account->ListDirectoryPage(
-        std::get<AbstractCloudProvider::Directory>(directory),
-        /*page_token=*/std::nullopt, stop_source.get_token());
-
-    for (auto item : page.items) {
-      current_items.Append(winrt::make<FileListEntryModel>(
-          account->Id(), to_string(path), std::move(item)));
-    }
+    std::optional<std::string> page_token;
+    do {
+      auto page = co_await account->ListDirectoryPage(
+          std::get<AbstractCloudProvider::Directory>(directory), page_token,
+          stop_source.get_token());
+      for (auto item : page.items) {
+        current_items.Append(winrt::make<FileListEntryModel>(
+            account->Id(), to_string(path), std::move(item)));
+      }
+      page_token = std::move(page.next_page_token);
+    } while (page_token);
   } catch (const coro::Exception& e) {
     std::stringstream stream;
     stream << e.what() << '\n';
