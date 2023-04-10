@@ -32,12 +32,11 @@ void MainPage::OnNavigatedTo(const NavigationEventArgs& e) {
 }
 
 void MainPage::OnNavigatedFrom(const NavigationEventArgs&) {
-  model_->Accounts().VectorChanged(accounts_changed_);
-  model_.reset();
+  model_.Accounts().VectorChanged(accounts_changed_);
 }
 
 void MainPage::NavViewLoaded(IInspectable const&, RoutedEventArgs const&) {
-  accounts_changed_ = model_->Accounts().VectorChanged(
+  accounts_changed_ = model_.Accounts().VectorChanged(
       [&](const auto& /*sender*/, const auto& /*args*/) { UpdateMenu(); });
   UpdateMenu();
 }
@@ -57,7 +56,7 @@ void MainPage::MenuItemInvoked(
       if (entry.Tag().try_as<hstring>() == kAddAccountPageTag) {
         ContentFrame().Navigate(
             xaml_typename<coro_cloudbrowser_winrt::AddAccountPage>(),
-            model_->ProviderTypes());
+            model_.ProviderTypes());
       } else if (auto account = args.InvokedItem()
                                     .try_as<coro_cloudbrowser_winrt::
                                                 CloudProviderAccountModel>()) {
@@ -72,7 +71,7 @@ void MainPage::MenuItemInvoked(
 void MainPage::UpdateMenu() {
   NavigationView().MenuItems().Clear();
 
-  for (const auto& account : model_->Accounts()) {
+  for (const auto& account : model_.Accounts()) {
     NavigationViewItem item;
     item.ContentTemplate(NavViewMenuItemTemplate());
     item.Content(account);
@@ -89,7 +88,7 @@ void MainPage::UpdateMenu() {
     NavigationView().MenuItems().Append(std::move(item));
   }
 
-  auto accounts = model_->Accounts();
+  auto accounts = model_.Accounts();
   if (accounts.Size() > 0) {
     ContentFrame().Navigate(
         xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
@@ -98,7 +97,7 @@ void MainPage::UpdateMenu() {
   } else {
     ContentFrame().Navigate(
         xaml_typename<coro_cloudbrowser_winrt::AddAccountPage>(),
-        model_->ProviderTypes());
+        model_.ProviderTypes());
   }
 }
 

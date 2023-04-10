@@ -13,5 +13,6 @@ enum FileType { kDirectory, kAudio, kImage, kVideo, kUnknown };
   String Icon;
   Windows.UI.Xaml.Visibility IconVisibility;
   FileType Type;
+  String Uri;
 }
 }  // namespace coro_cloudbrowser_winrt

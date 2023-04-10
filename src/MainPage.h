@@ -27,7 +27,7 @@ struct MainPage : MainPageT<MainPage> {
   void UpdateMenu();
 
   event_token accounts_changed_;
-  std::optional<coro_cloudbrowser_winrt::MainPageModel> model_;
+  coro_cloudbrowser_winrt::MainPageModel model_{nullptr};
 };
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

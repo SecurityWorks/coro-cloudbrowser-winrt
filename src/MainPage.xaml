@@ -25,7 +25,7 @@
                     </Image>
                 </Border>
                 <Border Grid.Row="0" Grid.Column="1" Padding="12, 0, 0, 0">
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{x:Bind Label}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{x:Bind Label}" TextTrimming="CharacterEllipsis"/>
                 </Border>
             </Grid>
         </DataTemplate>

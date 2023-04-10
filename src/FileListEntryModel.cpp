@@ -24,9 +24,9 @@ using ::winrt::Windows::UI::Xaml::Visibility;
 using ::winrt::Windows::UI::Xaml::Data::PropertyChangedEventArgs;
 using ::winrt::Windows::UI::Xaml::Data::PropertyChangedEventHandler;
 
-std::string GetThumbnailUri(const CloudProviderAccount::Id& id,
-                            std::string_view path,
-                            const AbstractCloudProvider::Item& item) {
+std::string GetFileUri(const CloudProviderAccount::Id& id,
+                       std::string_view path,
+                       const AbstractCloudProvider::Item& item) {
   if (const auto* file = std::get_if<AbstractCloudProvider::File>(&item);
       file && [&] {
         switch (GetFileType(file->mime_type)) {
@@ -37,9 +37,9 @@ std::string GetThumbnailUri(const CloudProviderAccount::Id& id,
             return false;
         }
       }()) {
-    return fmt::format(
-        CORO_CLOUDSTORAGE_REDIRECT_URI "/list/{}/{}{}?thumbnail=true", id.type,
-        EncodeUri(id.username), StrCat(path, EncodeUri(file->name)));
+    return fmt::format(CORO_CLOUDSTORAGE_REDIRECT_URI "/list/{}/{}{}", id.type,
+                       EncodeUri(id.username),
+                       StrCat(path, EncodeUri(file->name)));
   } else {
     return "";
   }
@@ -51,7 +51,7 @@ FileListEntryModel::FileListEntryModel(
     const coro::cloudstorage::util::CloudProviderAccount::Id& account_id,
     std::string_view directory,
     coro::cloudstorage::util::AbstractCloudProvider::Item item)
-    : thumbnail_uri_(to_hstring(GetThumbnailUri(account_id, directory, item))),
+    : uri_(to_hstring(GetFileUri(account_id, directory, item))),
       item_(std::move(item)) {}
 
 void FileListEntryModel::Size(hstring) { throw hresult_not_implemented(); }
@@ -107,7 +107,9 @@ hstring FileListEntryModel::Timestamp() const {
 
 void FileListEntryModel::Thumbnail(hstring) { throw hresult_not_implemented(); }
 
-hstring FileListEntryModel::Thumbnail() const { return thumbnail_uri_; }
+hstring FileListEntryModel::Thumbnail() const {
+  return uri_ + L"?thumbnail=true";
+}
 
 void FileListEntryModel::ThumbnailVisibility(Visibility visibility) {
   if (thumbnail_visibility_ != visibility) {
@@ -167,6 +169,10 @@ FileType FileListEntryModel::Type() const {
 }
 
 void FileListEntryModel::Type(FileType) { throw hresult_not_implemented(); }
+
+hstring FileListEntryModel::Uri() const { return uri_; }
+
+void FileListEntryModel::Uri(hstring) { throw hresult_not_implemented(); }
 
 winrt::event_token FileListEntryModel::PropertyChanged(
     const PropertyChangedEventHandler& value) {

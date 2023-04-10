@@ -1,0 +1,6 @@
+namespace coro_cloudbrowser_winrt {
+[default_interface] runtimeclass FilePreviewPage
+    : Windows.UI.Xaml.Controls.Page {
+  FilePreviewPage();
+}
+}  // namespace coro_cloudbrowser_winrt

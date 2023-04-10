@@ -225,6 +225,14 @@
       <DependentUpon>src\AddAccountPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClInclude>
+    <ClInclude Include="src\FilePreviewPage.h">
+      <DependentUpon>src\FilePreviewPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
+    <ClInclude Include="src\FilePreviewPageModel.h">
+      <DependentUpon>src\FilePreviewPageModel.idl</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="src\WebViewPage.h">
       <DependentUpon>src\WebViewPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -265,6 +273,9 @@
     <Page Include="src\AddAccountPage.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="src\FilePreviewPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="src\WebViewPage.xaml">
       <SubType>Designer</SubType>
     </Page>
@@ -290,6 +301,14 @@
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
     <ClCompile Include="src\AddAccountPage.cpp">
       <DependentUpon>src\AddAccountPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
+    <ClCompile Include="src\FilePreviewPage.cpp">
+      <DependentUpon>src\FilePreviewPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
+    <ClCompile Include="src\FilePreviewPageModel.cpp">
+      <DependentUpon>src\FilePreviewPageModel.idl</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
     <ClCompile Include="src\WebViewPage.cpp">
@@ -332,6 +351,13 @@
     <Midl Include="src\AddAccountPage.idl">
       <DependentUpon>src\AddAccountPage.xaml</DependentUpon>
       <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="src\FilePreviewPage.idl">
+      <DependentUpon>src\FilePreviewPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="src\FilePreviewPageModel.idl">
+      <SubType>Designer</SubType>
     </Midl>
     <Midl Include="src\WebViewPage.idl">
       <DependentUpon>src\WebViewPage.xaml</DependentUpon>

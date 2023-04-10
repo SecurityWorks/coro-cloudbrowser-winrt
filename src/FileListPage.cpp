@@ -11,6 +11,8 @@
 
 #include "FileListEntryModel.h"
 #include "FileListPageModel.h"
+#include "FilePreviewPage.h"
+#include "FilePreviewPageModel.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
@@ -47,8 +49,8 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   });
 
   page_model_ = e.Parameter().as<coro_cloudbrowser_winrt::FileListPageModel>();
-  auto account = page_model_->Account().as<CloudProviderAccountModel>();
-  auto path = page_model_->Path();
+  auto account = page_model_.Account().as<CloudProviderAccountModel>();
+  auto path = page_model_.Path();
 
   concurrency::cancellation_token_source stop_source;
   auto stop_token = co_await winrt::get_cancellation_token();
@@ -73,7 +75,7 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   } catch (const coro::Exception& e) {
     std::stringstream stream;
     stream << e.what() << '\n';
-    stream << winrt::to_string(page_model_->Path()) << '\n';
+    stream << winrt::to_string(path) << '\n';
     OutputDebugStringA(stream.str().c_str());
   }
 }
@@ -90,11 +92,16 @@ void FileListPage::FileListEntryClick(const IInspectable&,
   auto entry = e.ClickedItem().as<FileListEntryModel>();
   if (entry->Type() == FileType::kDirectory) {
     winrt::hstring path = winrt::to_hstring(
-        StrCat(winrt::to_string(page_model_->Path()),
+        StrCat(winrt::to_string(page_model_.Path()),
                EncodeUri(winrt::to_string(entry->Filename())), '/'));
-    Frame().Navigate(xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
-                     winrt::make<FileListPageModel>(page_model_->Account(),
-                                                    std::move(path)));
+    Frame().Navigate(
+        xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
+        winrt::make<FileListPageModel>(page_model_.Account(), std::move(path)));
+  } else if (entry->Type() == FileType::kAudio ||
+             entry->Type() == FileType::kVideo) {
+    Frame().Navigate(
+        xaml_typename<coro_cloudbrowser_winrt::FilePreviewPage>(),
+        winrt::make<FilePreviewPageModel>(entry->Filename(), entry->Uri()));
   }
 }
 

@@ -39,12 +39,15 @@ struct FileListEntryModel : FileListEntryModelT<FileListEntryModel> {
   FileType Type() const;
   void Type(FileType);
 
+  hstring Uri() const;
+  void Uri(hstring);
+
   winrt::event_token PropertyChanged(
       const Windows::UI::Xaml::Data::PropertyChangedEventHandler& value);
   void PropertyChanged(const winrt::event_token& token);
 
  private:
-  hstring thumbnail_uri_;
+  hstring uri_;
   coro::cloudstorage::util::AbstractCloudProvider::Item item_;
   Windows::UI::Xaml::Visibility thumbnail_visibility_ =
       Windows::UI::Xaml::Visibility::Collapsed;

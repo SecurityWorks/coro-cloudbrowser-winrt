@@ -68,6 +68,9 @@
     <Page Include="src\WebViewPage.xaml">
       <Filter>Source</Filter>
     </Page>
+    <Page Include="src\FilePreviewPage.xaml">
+      <Filter>Source</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/pch.h">
@@ -91,6 +94,9 @@
       <Filter>Source</Filter>
     </Midl>
     <Midl Include="src\MainPageModel.idl">
+      <Filter>Source</Filter>
+    </Midl>
+    <Midl Include="src\FilePreviewPageModel.idl">
       <Filter>Source</Filter>
     </Midl>
   </ItemGroup>

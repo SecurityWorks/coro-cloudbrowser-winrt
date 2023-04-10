@@ -65,7 +65,7 @@ struct FileListPage : FileListPageT<FileListPage> {
                     const Windows::UI::Xaml::RoutedEventArgs&);
 
  private:
-  std::optional<coro_cloudbrowser_winrt::FileListPageModel> page_model_;
+  coro_cloudbrowser_winrt::FileListPageModel page_model_{nullptr};
 };
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
