@@ -6,5 +6,6 @@ namespace coro_cloudbrowser_winrt {
 
   CloudProviderAccountModel Account;
   String Path;
+  String ScrollPosition;
 }
 }  // namespace coro_cloudbrowser_winrt

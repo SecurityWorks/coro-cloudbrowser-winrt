@@ -9,6 +9,9 @@ struct FileListPage : FileListPageT<FileListPage> {
   Windows::Foundation::IAsyncAction OnNavigatedTo(
       Windows::UI::Xaml::Navigation::NavigationEventArgs e);
 
+  void OnNavigatedFrom(
+      const Windows::UI::Xaml::Navigation::NavigationEventArgs& e);
+
   void OnGettingFocus(const Windows::UI::Xaml::UIElement&,
                       const Windows::UI::Xaml::Input::GettingFocusEventArgs&);
 

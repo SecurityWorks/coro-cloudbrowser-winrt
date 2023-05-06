@@ -19,9 +19,15 @@ struct FileListPageModel : FileListPageModelT<FileListPageModel> {
   hstring Path() const { return path_; }
   void Path(hstring path) { throw hresult_not_implemented(); }
 
+  hstring ScrollPosition() const { return scroll_position_; }
+  void ScrollPosition(hstring scroll_position) {
+    scroll_position_ = std::move(scroll_position);
+  }
+
  private:
   coro_cloudbrowser_winrt::CloudProviderAccountModel account_;
   hstring path_;
+  hstring scroll_position_;
 };
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
 

@@ -24,6 +24,7 @@ using ::coro::http::DecodeUri;
 using ::coro::http::EncodeUri;
 using ::coro::util::AtScopeExit;
 using ::winrt::Windows::Foundation::IAsyncAction;
+using ::winrt::Windows::Foundation::IAsyncOperation;
 using ::winrt::Windows::Foundation::IInspectable;
 using ::winrt::Windows::UI::Xaml::DependencyProperty;
 using ::winrt::Windows::UI::Xaml::ExceptionRoutedEventArgs;
@@ -32,6 +33,7 @@ using ::winrt::Windows::UI::Xaml::UIElement;
 using ::winrt::Windows::UI::Xaml::Visibility;
 using ::winrt::Windows::UI::Xaml::Controls::Image;
 using ::winrt::Windows::UI::Xaml::Controls::ItemClickEventArgs;
+using ::winrt::Windows::UI::Xaml::Controls::ListViewPersistenceHelper;
 using ::winrt::Windows::UI::Xaml::Input::GettingFocusEventArgs;
 using ::winrt::Windows::UI::Xaml::Input::KeyRoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::Media::Animation::Storyboard;
@@ -42,7 +44,8 @@ using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
 IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   auto current_items = winrt::single_threaded_observable_vector<
       coro_cloudbrowser_winrt::FileListEntryModel>();
-  FileList().ItemsSource(current_items);
+  auto file_list = FileList();
+  file_list.ItemsSource(current_items);
   ProgressBar().Visibility(Visibility::Visible);
   auto at_exit = AtScopeExit([progress_bar = ProgressBar()] {
     progress_bar.Visibility(Visibility::Collapsed);
@@ -51,12 +54,13 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   page_model_ = e.Parameter().as<coro_cloudbrowser_winrt::FileListPageModel>();
   auto account = page_model_.Account().as<CloudProviderAccountModel>();
   auto path = page_model_.Path();
+  auto scroll_position = page_model_.ScrollPosition();
+
+  Path().Text(winrt::to_hstring(DecodeUri(winrt::to_string(path))));
 
   concurrency::cancellation_token_source stop_source;
   auto stop_token = co_await winrt::get_cancellation_token();
   stop_token.callback([stop_source] { stop_source.cancel(); });
-
-  Path().Text(winrt::to_hstring(DecodeUri(winrt::to_string(path))));
 
   try {
     auto directory = co_await account->GetItemByPath(winrt::to_string(path),
@@ -78,6 +82,25 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
     stream << winrt::to_string(path) << '\n';
     OutputDebugStringA(stream.str().c_str());
   }
+
+  co_await ListViewPersistenceHelper::SetRelativeScrollPositionAsync(
+      file_list, scroll_position,
+      [current_items](const hstring& key) -> IAsyncOperation<IInspectable> {
+        for (const auto& item : current_items) {
+          if (item.Id() == key) {
+            co_return item;
+          }
+        }
+        co_return nullptr;
+      });
+}
+
+void FileListPage::OnNavigatedFrom(const NavigationEventArgs&) {
+  page_model_.ScrollPosition(
+      ListViewPersistenceHelper::GetRelativeScrollPosition(
+          FileList(), [](const IInspectable& d) {
+            return d.as<FileListEntryModel>()->Id();
+          }));
 }
 
 void FileListPage::OnGettingFocus(const UIElement&,
@@ -136,8 +159,8 @@ void FileListPage::FileListEntryThumbnailImageFailed(
 void FileListPage::FileListEntryThumbnailImageLoaded(const IInspectable& sender,
                                                      const RoutedEventArgs&) {
   sender.as<Image>().RegisterPropertyChangedCallback(
-      Image::SourceProperty(), [](const IInspectable& sender,
-                                  const DependencyProperty&) {
+      Image::SourceProperty(),
+      [](const IInspectable& sender, const DependencyProperty&) {
         auto data = sender.as<Image>().DataContext().as<FileListEntryModel>();
         if (data) {
           data->ThumbnailVisibility(Visibility::Collapsed);
