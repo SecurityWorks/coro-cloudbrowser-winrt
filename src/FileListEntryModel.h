@@ -10,7 +10,7 @@ struct FileListEntryModel : FileListEntryModelT<FileListEntryModel> {
   FileListEntryModel(
       const coro::cloudstorage::util::CloudProviderAccount::Id& account_id,
       std::string_view directory,
-      coro::cloudstorage::util::AbstractCloudProvider::Item item);
+      const coro::cloudstorage::util::AbstractCloudProvider::Item& item);
 
   void Size(hstring);
   hstring Size() const;
@@ -46,14 +46,19 @@ struct FileListEntryModel : FileListEntryModelT<FileListEntryModel> {
       const Windows::UI::Xaml::Data::PropertyChangedEventHandler& value);
   void PropertyChanged(const winrt::event_token& token);
 
+  void Update(const coro_cloudbrowser_winrt::FileListEntryModel&);
+
  private:
-  hstring uri_;
-  coro::cloudstorage::util::AbstractCloudProvider::Item item_;
+  hstring size_;
+  hstring id_;
+  hstring filename_;
+  hstring timestamp_;
   Windows::UI::Xaml::Visibility thumbnail_visibility_ =
       Windows::UI::Xaml::Visibility::Collapsed;
   Windows::UI::Xaml::Visibility icon_visibility_ =
       Windows::UI::Xaml::Visibility::Visible;
-  hstring timestamp_;
+  FileType type_;
+  hstring uri_;
   winrt::event<Windows::UI::Xaml::Data::PropertyChangedEventHandler>
       property_changed_;
 };

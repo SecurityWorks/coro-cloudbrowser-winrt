@@ -61,21 +61,9 @@ hstring GetTimestamp(const AbstractCloudProvider::Item& item) {
   return formatter.Format(winrt::clock::from_time_t(*timestamp));
 }
 
-}  // namespace
-
-FileListEntryModel::FileListEntryModel(
-    const coro::cloudstorage::util::CloudProviderAccount::Id& account_id,
-    std::string_view directory,
-    coro::cloudstorage::util::AbstractCloudProvider::Item item)
-    : uri_(to_hstring(GetFileUri(account_id, directory, item))),
-      item_(std::move(item)),
-      timestamp_(GetTimestamp(item_)) {}
-
-void FileListEntryModel::Size(hstring) { throw hresult_not_implemented(); }
-
-hstring FileListEntryModel::Size() const {
+hstring GetSize(const AbstractCloudProvider::Item& item) {
   int64_t bytes =
-      std::visit([](const auto& d) { return d.size.value_or(-1); }, item_);
+      std::visit([](const auto& d) { return d.size.value_or(-1); }, item);
   if (bytes < 0) {
     return L"";
   } else if (bytes < 1024) {
@@ -90,21 +78,75 @@ hstring FileListEntryModel::Size() const {
   }
 }
 
+FileType GetFileType(const AbstractCloudProvider::Item& item) {
+  if (std::holds_alternative<AbstractCloudProvider::Directory>(item)) {
+    return FileType::kDirectory;
+  } else {
+    switch (
+        GetFileType(std::get<AbstractCloudProvider::File>(item).mime_type)) {
+      case coro::cloudstorage::util::FileType::kAudio:
+        return FileType::kAudio;
+      case coro::cloudstorage::util::FileType::kVideo:
+        return FileType::kVideo;
+      case coro::cloudstorage::util::FileType::kImage:
+        return FileType::kImage;
+      default:
+        return FileType::kUnknown;
+    }
+  }
+}
+
+hstring GetId(const AbstractCloudProvider::Item& item) {
+  return winrt::to_hstring(
+      std::visit([](const auto& d) { return d.id; }, item));
+}
+
+hstring GetFilename(const AbstractCloudProvider::Item& item) {
+  return winrt::to_hstring(
+      std::visit([](const auto& d) { return d.name; }, item));
+}
+
+}  // namespace
+
+FileListEntryModel::FileListEntryModel(
+    const coro::cloudstorage::util::CloudProviderAccount::Id& account_id,
+    std::string_view directory,
+    const coro::cloudstorage::util::AbstractCloudProvider::Item& item)
+    : size_(GetSize(item)),
+      id_(GetId(item)),
+      filename_(GetFilename(item)),
+      type_(GetFileType(item)),
+      timestamp_(GetTimestamp(item)),
+      uri_(to_hstring(GetFileUri(account_id, directory, item))) {}
+
+void FileListEntryModel::Size(hstring size) {
+  if (size_ != size) {
+    size_ = std::move(size);
+    property_changed_(*this, PropertyChangedEventArgs(L"Size"));
+  }
+}
+
+hstring FileListEntryModel::Size() const { return size_; }
+
 void FileListEntryModel::Id(hstring) { throw hresult_not_implemented(); }
 
-hstring FileListEntryModel::Id() const {
-  return winrt::to_hstring(
-      std::visit([](const auto& d) { return d.id; }, item_));
+hstring FileListEntryModel::Id() const { return id_; }
+
+void FileListEntryModel::Filename(hstring filename) {
+  if (filename_ != filename) {
+    filename_ = std::move(filename);
+    property_changed_(*this, PropertyChangedEventArgs(L"Filename"));
+  }
 }
 
-void FileListEntryModel::Filename(hstring) { throw hresult_not_implemented(); }
+hstring FileListEntryModel::Filename() const { return filename_; }
 
-hstring FileListEntryModel::Filename() const {
-  return winrt::to_hstring(
-      std::visit([](const auto& d) { return d.name; }, item_));
+void FileListEntryModel::Timestamp(hstring timestamp) {
+  if (timestamp_ != timestamp) {
+    timestamp_ = std::move(timestamp);
+    property_changed_(*this, PropertyChangedEventArgs(L"Timestamp"));
+  }
 }
-
-void FileListEntryModel::Timestamp(hstring) { throw hresult_not_implemented(); }
 
 hstring FileListEntryModel::Timestamp() const { return timestamp_; }
 
@@ -159,29 +201,26 @@ Visibility FileListEntryModel::IconVisibility() const {
   return icon_visibility_;
 }
 
-FileType FileListEntryModel::Type() const {
-  if (std::holds_alternative<AbstractCloudProvider::Directory>(item_)) {
-    return FileType::kDirectory;
-  } else {
-    switch (
-        GetFileType(std::get<AbstractCloudProvider::File>(item_).mime_type)) {
-      case coro::cloudstorage::util::FileType::kAudio:
-        return FileType::kAudio;
-      case coro::cloudstorage::util::FileType::kVideo:
-        return FileType::kVideo;
-      case coro::cloudstorage::util::FileType::kImage:
-        return FileType::kImage;
-      default:
-        return FileType::kUnknown;
-    }
+FileType FileListEntryModel::Type() const { return type_; }
+
+void FileListEntryModel::Type(FileType type) {
+  if (type_ != type) {
+    type_ = type;
+    property_changed_(*this, PropertyChangedEventArgs(L"Type"));
+    property_changed_(*this, PropertyChangedEventArgs(L"Icon"));
+    property_changed_(*this, PropertyChangedEventArgs(L"Thumbnail"));
   }
 }
 
-void FileListEntryModel::Type(FileType) { throw hresult_not_implemented(); }
-
 hstring FileListEntryModel::Uri() const { return uri_; }
 
-void FileListEntryModel::Uri(hstring) { throw hresult_not_implemented(); }
+void FileListEntryModel::Uri(hstring uri) {
+  if (uri_ != uri) {
+    uri_ = std::move(uri);
+    property_changed_(*this, PropertyChangedEventArgs(L"Uri"));
+    property_changed_(*this, PropertyChangedEventArgs(L"Thumbnail"));
+  }
+}
 
 winrt::event_token FileListEntryModel::PropertyChanged(
     const PropertyChangedEventHandler& value) {
@@ -190,6 +229,15 @@ winrt::event_token FileListEntryModel::PropertyChanged(
 
 void FileListEntryModel::PropertyChanged(const winrt::event_token& token) {
   property_changed_.remove(token);
+}
+
+void FileListEntryModel::Update(
+    const coro_cloudbrowser_winrt::FileListEntryModel& updated) {
+  Size(updated.Size());
+  Filename(updated.Filename());
+  Timestamp(updated.Timestamp());
+  Type(updated.Type());
+  Uri(updated.Uri());
 }
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

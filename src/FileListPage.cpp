@@ -42,57 +42,26 @@ using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
 }  // namespace
 
 IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
-  auto current_items = winrt::single_threaded_observable_vector<
-      coro_cloudbrowser_winrt::FileListEntryModel>();
-  auto file_list = FileList();
-  file_list.ItemsSource(current_items);
-  ProgressBar().Visibility(Visibility::Visible);
-  auto at_exit = AtScopeExit([progress_bar = ProgressBar()] {
-    progress_bar.Visibility(Visibility::Collapsed);
-  });
-
   page_model_ = e.Parameter().as<coro_cloudbrowser_winrt::FileListPageModel>();
-  auto account = page_model_.Account().as<CloudProviderAccountModel>();
-  auto path = page_model_.Path();
-  auto scroll_position = page_model_.ScrollPosition();
+  FileList().ItemsSource(page_model_.Items());
+  Path().Text(
+      winrt::to_hstring(DecodeUri(winrt::to_string(page_model_.Path()))));
 
-  Path().Text(winrt::to_hstring(DecodeUri(winrt::to_string(path))));
-
-  concurrency::cancellation_token_source stop_source;
-  auto stop_token = co_await winrt::get_cancellation_token();
-  stop_token.callback([stop_source] { stop_source.cancel(); });
-
-  try {
-    auto directory = co_await account->GetItemByPath(winrt::to_string(path),
-                                                     stop_source.get_token());
-    std::optional<std::string> page_token;
-    do {
-      auto page = co_await account->ListDirectoryPage(
-          std::get<AbstractCloudProvider::Directory>(directory), page_token,
-          stop_source.get_token());
-      for (auto item : page.items) {
-        current_items.Append(winrt::make<FileListEntryModel>(
-            account->Id(), to_string(path), std::move(item)));
-      }
-      page_token = std::move(page.next_page_token);
-    } while (page_token);
-  } catch (const coro::Exception& e) {
-    std::stringstream stream;
-    stream << e.what() << '\n';
-    stream << winrt::to_string(path) << '\n';
-    OutputDebugStringA(stream.str().c_str());
+  if (!page_model_.ScrollPosition().empty()) {
+    co_await ListViewPersistenceHelper::SetRelativeScrollPositionAsync(
+        FileList(), page_model_.ScrollPosition(),
+        [current_items = page_model_.Items()](
+            const hstring& key) -> IAsyncOperation<IInspectable> {
+          for (const auto& item : current_items) {
+            if (item.Id() == key) {
+              co_return item;
+            }
+          }
+          co_return nullptr;
+        });
   }
 
-  co_await ListViewPersistenceHelper::SetRelativeScrollPositionAsync(
-      file_list, scroll_position,
-      [current_items](const hstring& key) -> IAsyncOperation<IInspectable> {
-        for (const auto& item : current_items) {
-          if (item.Id() == key) {
-            co_return item;
-          }
-        }
-        co_return nullptr;
-      });
+  co_await RefreshContent();
 }
 
 void FileListPage::OnNavigatedFrom(const NavigationEventArgs&) {
@@ -193,5 +162,77 @@ void FileListPage::MoveCancelClick(const IInspectable&,
 void FileListPage::DownloadClick(const IInspectable&, const RoutedEventArgs&) {}
 
 void FileListPage::RefreshClick(const IInspectable&, const RoutedEventArgs&) {}
+
+IAsyncAction FileListPage::RefreshContent() {
+  ProgressBar().Visibility(Visibility::Visible);
+  auto at_exit = AtScopeExit([progress_bar = ProgressBar()] {
+    progress_bar.Visibility(Visibility::Collapsed);
+  });
+
+  auto path = page_model_.Path();
+  auto account = page_model_.Account().as<CloudProviderAccountModel>();
+  auto current_items = page_model_.Items();
+  bool empty = current_items.Size() == 0;
+
+  concurrency::cancellation_token_source stop_source;
+  auto stop_token = co_await winrt::get_cancellation_token();
+  stop_token.callback([stop_source] { stop_source.cancel(); });
+
+  std::vector<coro_cloudbrowser_winrt::FileListEntryModel> updated;
+  try {
+    auto directory = co_await account->GetItemByPath(winrt::to_string(path),
+                                                     stop_source.get_token());
+    std::optional<std::string> page_token;
+    do {
+      auto page = co_await account->ListDirectoryPage(
+          std::get<AbstractCloudProvider::Directory>(directory), page_token,
+          stop_source.get_token());
+      for (auto item : page.items) {
+        auto entry = winrt::make<FileListEntryModel>(
+            account->Id(), to_string(path), std::move(item));
+        if (empty) {
+          current_items.Append(std::move(entry));
+        } else {
+          updated.emplace_back(std::move(entry));
+        }
+      }
+      page_token = std::move(page.next_page_token);
+    } while (page_token);
+  } catch (const coro::Exception& e) {
+    std::stringstream stream;
+    stream << e.what() << '\n';
+    stream << winrt::to_string(path) << '\n';
+    OutputDebugStringA(stream.str().c_str());
+  }
+
+  if (empty) {
+    co_return;
+  }
+
+  std::unordered_map<hstring, uint32_t> previous;
+  for (uint32_t i = 0; i < current_items.Size(); i++) {
+    previous.emplace(current_items.GetAt(i).Id(), i);
+  }
+
+  std::unordered_set<hstring> current;
+  for (auto entry : updated) {
+    current.insert(entry.Id());
+    auto it = previous.find(entry.Id());
+    if (it == previous.end()) {
+      current_items.InsertAt(0, std::move(entry));
+    } else {
+      current_items.GetAt(it->second).as<FileListEntryModel>()->Update(entry);
+    }
+  }
+
+  for (uint32_t i = 0; i < current_items.Size();) {
+    auto it = current.find(current_items.GetAt(i).Id());
+    if (it == current.end()) {
+      current_items.RemoveAt(i);
+    } else {
+      i++;
+    }
+  }
+}
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

@@ -68,6 +68,8 @@ struct FileListPage : FileListPageT<FileListPage> {
                     const Windows::UI::Xaml::RoutedEventArgs&);
 
  private:
+  Windows::Foundation::IAsyncAction RefreshContent();
+
   coro_cloudbrowser_winrt::FileListPageModel page_model_{nullptr};
 };
 

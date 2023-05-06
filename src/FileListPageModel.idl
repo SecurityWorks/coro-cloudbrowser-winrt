@@ -1,4 +1,5 @@
 import "CloudProviderAccountModel.idl";
+import "FileListEntryModel.idl";
 
 namespace coro_cloudbrowser_winrt {
 [bindable][default_interface] runtimeclass FileListPageModel {
@@ -7,5 +8,6 @@ namespace coro_cloudbrowser_winrt {
   CloudProviderAccountModel Account;
   String Path;
   String ScrollPosition;
+  IObservableVector<FileListEntryModel> Items;
 }
 }  // namespace coro_cloudbrowser_winrt

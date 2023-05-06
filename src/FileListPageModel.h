@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CloudProviderAccountModel.h"
+#include "FileListEntryModel.h"
 #include "FileListPageModel.g.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
@@ -24,10 +25,24 @@ struct FileListPageModel : FileListPageModelT<FileListPageModel> {
     scroll_position_ = std::move(scroll_position);
   }
 
+  winrt::Windows::Foundation::Collections::IObservableVector<
+      coro_cloudbrowser_winrt::FileListEntryModel>
+  Items() const {
+    return items_;
+  }
+  void Items(winrt::Windows::Foundation::Collections::IObservableVector<
+             coro_cloudbrowser_winrt::FileListEntryModel>) {
+    throw hresult_not_implemented();
+  }
+
  private:
   coro_cloudbrowser_winrt::CloudProviderAccountModel account_;
   hstring path_;
   hstring scroll_position_;
+  winrt::Windows::Foundation::Collections::IObservableVector<
+      coro_cloudbrowser_winrt::FileListEntryModel>
+      items_ = winrt::single_threaded_observable_vector<
+          coro_cloudbrowser_winrt::FileListEntryModel>();
 };
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
 
