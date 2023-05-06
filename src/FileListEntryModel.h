@@ -53,6 +53,7 @@ struct FileListEntryModel : FileListEntryModelT<FileListEntryModel> {
       Windows::UI::Xaml::Visibility::Collapsed;
   Windows::UI::Xaml::Visibility icon_visibility_ =
       Windows::UI::Xaml::Visibility::Visible;
+  hstring timestamp_;
   winrt::event<Windows::UI::Xaml::Data::PropertyChangedEventHandler>
       property_changed_;
 };

@@ -45,6 +45,22 @@ std::string GetFileUri(const CloudProviderAccount::Id& id,
   }
 }
 
+hstring GetTimestamp(const AbstractCloudProvider::Item& item) {
+  std::optional<int64_t> timestamp =
+      std::visit([](const auto& d) { return d.timestamp; }, item);
+  if (!timestamp) {
+    return L"";
+  }
+  Windows::Globalization::DateTimeFormatting::DateTimeFormatter formatter(
+      L"{year.full}.{month.integer(2)}.{day.integer(2)} "
+      L"{hour.integer(2)}:{minute.integer(2)}",
+      Windows::Globalization::ApplicationLanguages::Languages(),
+      Windows::Globalization::GeographicRegion().CodeTwoLetter(),
+      Windows::Globalization::CalendarIdentifiers::Gregorian(),
+      Windows::Globalization::ClockIdentifiers::TwentyFourHour());
+  return formatter.Format(winrt::clock::from_time_t(*timestamp));
+}
+
 }  // namespace
 
 FileListEntryModel::FileListEntryModel(
@@ -52,7 +68,8 @@ FileListEntryModel::FileListEntryModel(
     std::string_view directory,
     coro::cloudstorage::util::AbstractCloudProvider::Item item)
     : uri_(to_hstring(GetFileUri(account_id, directory, item))),
-      item_(std::move(item)) {}
+      item_(std::move(item)),
+      timestamp_(GetTimestamp(item_)) {}
 
 void FileListEntryModel::Size(hstring) { throw hresult_not_implemented(); }
 
@@ -89,21 +106,7 @@ hstring FileListEntryModel::Filename() const {
 
 void FileListEntryModel::Timestamp(hstring) { throw hresult_not_implemented(); }
 
-hstring FileListEntryModel::Timestamp() const {
-  std::optional<int64_t> timestamp =
-      std::visit([](const auto& d) { return d.timestamp; }, item_);
-  if (!timestamp) {
-    return L"";
-  }
-  Windows::Globalization::DateTimeFormatting::DateTimeFormatter formatter(
-      L"{year.full}.{month.integer(2)}.{day.integer(2)} "
-      L"{hour.integer(2)}:{minute.integer(2)}",
-      Windows::Globalization::ApplicationLanguages::Languages(),
-      Windows::Globalization::GeographicRegion().CodeTwoLetter(),
-      Windows::Globalization::CalendarIdentifiers::Gregorian(),
-      Windows::Globalization::ClockIdentifiers::TwentyFourHour());
-  return formatter.Format(winrt::clock::from_time_t(*timestamp));
-}
+hstring FileListEntryModel::Timestamp() const { return timestamp_; }
 
 void FileListEntryModel::Thumbnail(hstring) { throw hresult_not_implemented(); }
 
