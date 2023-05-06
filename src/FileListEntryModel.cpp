@@ -108,7 +108,13 @@ hstring FileListEntryModel::Timestamp() const {
 void FileListEntryModel::Thumbnail(hstring) { throw hresult_not_implemented(); }
 
 hstring FileListEntryModel::Thumbnail() const {
-  return uri_ + L"?thumbnail=true";
+  switch (Type()) {
+    case FileType::kImage:
+    case FileType::kVideo:
+      return uri_ + L"?thumbnail=true";
+    default:
+      return L"";
+  }
 }
 
 void FileListEntryModel::ThumbnailVisibility(Visibility visibility) {
