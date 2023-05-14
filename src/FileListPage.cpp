@@ -9,6 +9,8 @@
 #include <coro/util/raii_utils.h>
 #include <fmt/format.h>
 
+#include <nlohmann/json.hpp>
+
 #include "FileListEntryModel.h"
 #include "FileListPageModel.h"
 #include "FilePreviewPage.h"
@@ -39,51 +41,65 @@ using ::winrt::Windows::UI::Xaml::Input::KeyRoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::Media::Animation::Storyboard;
 using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
 
+concurrency::task<
+    std::pair<std::optional<AbstractCloudProvider::Directory>,
+              std::optional<std::vector<AbstractCloudProvider::Item>>>>
+GetCachedDirectoryList(const CloudProviderAccountModel* account,
+                       std::string path,
+                       Concurrency::cancellation_token stop_token) {
+  auto item = co_await account->GetItemByPathCache(path, stop_token);
+  if (!item) {
+    co_return {std::nullopt, std::nullopt};
+  }
+  auto directory = std::get<AbstractCloudProvider::Directory>(*item);
+  co_return {directory,
+             co_await account->GetDirectoryListCache(directory, stop_token)};
+}
+
 }  // namespace
 
 IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   page_model_ = e.Parameter().as<coro_cloudbrowser_winrt::FileListPageModel>();
   auto account = page_model_.Account().as<CloudProviderAccountModel>();
   auto path = winrt::to_string(page_model_.Path());
+  bool empty = page_model_.Items().Size() == 0;
   FileList().ItemsSource(page_model_.Items());
   Path().Text(winrt::to_hstring(DecodeUri(path)));
-
-  if (!page_model_.ScrollPosition().empty()) {
-    co_await ListViewPersistenceHelper::SetRelativeScrollPositionAsync(
-        FileList(), page_model_.ScrollPosition(),
-        [current_items = page_model_.Items()](
-            const hstring& key) -> IAsyncOperation<IInspectable> {
-          for (const auto& item : current_items) {
-            if (item.Id() == key) {
-              co_return item;
-            }
-          }
-          co_return nullptr;
-        });
-  }
 
   concurrency::cancellation_token_source stop_source;
   auto stop_token = co_await winrt::get_cancellation_token();
   stop_token.callback([stop_source] { stop_source.cancel(); });
-  if (page_model_.Items().Size() == 0) {
-    auto directory =
-        co_await account->GetItemByPathCache(path, stop_source.get_token());
-    if (directory) {
-      auto items = co_await account->GetDirectoryListCache(
-          std::get<AbstractCloudProvider::Directory>(*directory),
-          stop_source.get_token());
-      if (items) {
-        std::vector<coro_cloudbrowser_winrt::FileListEntryModel> cached;
-        for (auto item : *items) {
-          cached.push_back(winrt::make<FileListEntryModel>(account->Id(), path,
-                                                           std::move(item)));
-        }
-        page_model_.Items().ReplaceAll(cached);
-      }
+  if (!empty) {
+    if (!page_model_.ScrollPosition().empty()) {
+      co_await ListViewPersistenceHelper::SetRelativeScrollPositionAsync(
+          FileList(), page_model_.ScrollPosition(),
+          [current_items = page_model_.Items()](
+              const hstring& key) -> IAsyncOperation<IInspectable> {
+            for (const auto& item : current_items) {
+              if (item.Id() == key) {
+                co_return item;
+              }
+            }
+            co_return nullptr;
+          });
     }
+    co_await RefreshContent(/*cached_parent=*/std::nullopt,
+                            /*cached_item_list=*/std::nullopt,
+                            stop_source.get_token());
+    co_return;
   }
-
-  co_await RefreshContent(stop_source.get_token());
+  auto [cached_parent, cached_item_list] = co_await GetCachedDirectoryList(
+      account.get(), path, stop_source.get_token());
+  if (cached_item_list) {
+    std::vector<coro_cloudbrowser_winrt::FileListEntryModel> cached_entries;
+    for (auto item : *cached_item_list) {
+      cached_entries.push_back(winrt::make<FileListEntryModel>(
+          account->Id(), path, std::move(item)));
+    }
+    page_model_.Items().ReplaceAll(cached_entries);
+  }
+  co_await RefreshContent(std::move(cached_parent), std::move(cached_item_list),
+                          stop_source.get_token());
 }
 
 void FileListPage::OnNavigatedFrom(const NavigationEventArgs&) {
@@ -186,6 +202,8 @@ void FileListPage::DownloadClick(const IInspectable&, const RoutedEventArgs&) {}
 void FileListPage::RefreshClick(const IInspectable&, const RoutedEventArgs&) {}
 
 IAsyncAction FileListPage::RefreshContent(
+    std::optional<AbstractCloudProvider::Directory> cached_parent,
+    std::optional<std::vector<AbstractCloudProvider::Item>> cached_item_list,
     concurrency::cancellation_token stop_token) {
   ProgressBar().Visibility(Visibility::Visible);
   auto at_exit = AtScopeExit([progress_bar = ProgressBar()] {
@@ -194,6 +212,7 @@ IAsyncAction FileListPage::RefreshContent(
 
   auto path = page_model_.Path();
   auto account = page_model_.Account().as<CloudProviderAccountModel>();
+  auto* provider = account->Provider();
   auto current_items = page_model_.Items();
   bool empty = current_items.Size() == 0;
 
@@ -201,8 +220,10 @@ IAsyncAction FileListPage::RefreshContent(
   try {
     auto directory = std::get<AbstractCloudProvider::Directory>(
         co_await account->GetItemByPath(winrt::to_string(path), stop_token));
-    co_await account->PutItemByPath(winrt::to_string(path), directory,
-                                    stop_token);
+    if (!cached_parent ||
+        provider->ToJson(directory) != provider->ToJson(*cached_parent))
+      co_await account->PutItemByPath(winrt::to_string(path), directory,
+                                      stop_token);
     std::optional<std::string> page_token;
     std::vector<AbstractCloudProvider::Item> items;
     do {
@@ -220,7 +241,16 @@ IAsyncAction FileListPage::RefreshContent(
       }
       page_token = std::move(page.next_page_token);
     } while (page_token);
-    co_await account->PutDirectoryList(directory, std::move(items), stop_token);
+    if (!cached_item_list ||
+        std::equal(
+            items.begin(), items.end(), cached_item_list->begin(),
+            cached_item_list->end(),
+            [provider = account->Provider()](const auto& i1, const auto& i2) {
+              return provider->ToJson(i1) == provider->ToJson(i2);
+            })) {
+      co_await account->PutDirectoryList(directory, std::move(items),
+                                         stop_token);
+    }
   } catch (const coro::Exception& e) {
     std::stringstream stream;
     stream << e.what() << '\n';

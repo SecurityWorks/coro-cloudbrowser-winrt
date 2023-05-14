@@ -155,11 +155,9 @@ CloudProviderAccountModel::GetItemByPathCache(
   return RunWinRt<std::optional<AbstractCloudProvider::Item>>(
       event_loop_, std::move(token), *account_,
       [path = std::move(path), cache_manager = *cache_manager_](
-          CloudProviderAccount* account,
-          coro::stdx::stop_token stop_token) mutable {
-        return GetItemByPathComponents(cache_manager, account->provider().get(),
-                                       GetPathComponents(std::move(path)),
-                                       std::move(stop_token));
+          CloudProviderAccount*, coro::stdx::stop_token stop_token) mutable {
+        return cache_manager.Get(GetPathComponents(std::move(path)),
+                                 std::move(stop_token));
       });
 }
 

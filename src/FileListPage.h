@@ -68,7 +68,13 @@ struct FileListPage : FileListPageT<FileListPage> {
                     const Windows::UI::Xaml::RoutedEventArgs&);
 
  private:
-  Windows::Foundation::IAsyncAction RefreshContent(concurrency::cancellation_token);
+  Windows::Foundation::IAsyncAction RefreshContent(
+      std::optional<coro::cloudstorage::util::AbstractCloudProvider::Directory>
+          cached_parent,
+      std::optional<
+          std::vector<coro::cloudstorage::util::AbstractCloudProvider::Item>>
+          cached_item_list,
+      concurrency::cancellation_token);
 
   coro_cloudbrowser_winrt::FileListPageModel page_model_{nullptr};
 };

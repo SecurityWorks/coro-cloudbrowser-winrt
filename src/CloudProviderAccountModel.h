@@ -23,6 +23,7 @@ class CloudProviderAccountModel
   void Label(hstring);
 
   auto Id() const { return account_->id(); }
+  const auto* Provider() const { return account_->provider().get(); }
 
   concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::Item>
   GetItemByPath(std::string path, concurrency::cancellation_token) const;
