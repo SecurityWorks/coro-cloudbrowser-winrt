@@ -226,6 +226,7 @@ IAsyncAction FileListPage::RefreshContent(
     stream << e.what() << '\n';
     stream << winrt::to_string(path) << '\n';
     OutputDebugStringA(stream.str().c_str());
+    co_return;
   }
 
   if (empty) {
