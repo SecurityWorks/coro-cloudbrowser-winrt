@@ -84,9 +84,11 @@ std::vector<std::string> GetPathComponents(std::string path) {
 
 CloudProviderAccountModel::CloudProviderAccountModel(
     coro::util::EventLoop* event_loop,
+    coro::cloudstorage::util::CloudProviderCacheManager cache_manager,
     coro::cloudstorage::util::CloudProviderAccount account)
     : event_loop_(event_loop),
       account_(std::move(account)),
+      cache_manager_(std::move(cache_manager)),
       label_(to_hstring(account_->username())),
       image_source_(to_hstring(fmt::format(
           CORO_CLOUDSTORAGE_REDIRECT_URI "/static/{}.png", account_->type()))) {
@@ -108,13 +110,7 @@ winrt::fire_and_forget CloudProviderAccountModel::final_release(
     std::unique_ptr<CloudProviderAccountModel> d) noexcept {
   co_await coro::cloudbrowser::util::SwitchTo(d->event_loop_);
   d->account_.reset();
-}
-
-concurrency::task<AbstractCloudProvider::Directory>
-CloudProviderAccountModel::GetRoot(
-    concurrency::cancellation_token token) const {
-  return RunWinRt(event_loop_, std::move(token), *account_,
-                  &AbstractCloudProvider::GetRoot);
+  d->cache_manager_.reset();
 }
 
 concurrency::task<AbstractCloudProvider::PageData>
@@ -127,17 +123,75 @@ CloudProviderAccountModel::ListDirectoryPage(
                   std::move(directory), std::move(page_token));
 }
 
+concurrency::task<std::optional<std::vector<AbstractCloudProvider::Item>>>
+CloudProviderAccountModel::GetDirectoryListCache(
+    coro::cloudstorage::util::AbstractCloudProvider::Directory directory,
+    concurrency::cancellation_token token) const {
+  return RunWinRt<std::optional<std::vector<AbstractCloudProvider::Item>>>(
+      event_loop_, std::move(token), *account_,
+      [directory = std::move(directory), cache_manager = *cache_manager_](
+          CloudProviderAccount*, coro::stdx::stop_token stop_token) mutable
+      -> coro::Task<std::optional<std::vector<AbstractCloudProvider::Item>>> {
+        return cache_manager.Get(std::move(directory), std::move(stop_token));
+      });
+}
+
 concurrency::task<AbstractCloudProvider::Item>
 CloudProviderAccountModel::GetItemByPath(
     std::string path, concurrency::cancellation_token token) const {
   return RunWinRt<AbstractCloudProvider::Item>(
       event_loop_, std::move(token), *account_,
       [path = std::move(path)](CloudProviderAccount* account,
+                               coro::stdx::stop_token stop_token) mutable {
+        return GetItemByPathComponents(account->provider().get(),
+                                       GetPathComponents(std::move(path)),
+                                       std::move(stop_token));
+      });
+}
+
+concurrency::task<std::optional<AbstractCloudProvider::Item>>
+CloudProviderAccountModel::GetItemByPathCache(
+    std::string path, concurrency::cancellation_token token) const {
+  return RunWinRt<std::optional<AbstractCloudProvider::Item>>(
+      event_loop_, std::move(token), *account_,
+      [path = std::move(path), cache_manager = *cache_manager_](
+          CloudProviderAccount* account,
+          coro::stdx::stop_token stop_token) mutable {
+        return GetItemByPathComponents(cache_manager, account->provider().get(),
+                                       GetPathComponents(std::move(path)),
+                                       std::move(stop_token));
+      });
+}
+
+concurrency::task<void> CloudProviderAccountModel::PutItemByPath(
+    std::string path, AbstractCloudProvider::Item item,
+    concurrency::cancellation_token token) {
+  co_await RunWinRt<std::monostate>(
+      event_loop_, std::move(token), *account_,
+      [path = std::move(path), cache_manager = *cache_manager_,
+       item = std::move(item)](CloudProviderAccount* account,
                                coro::stdx::stop_token stop_token) mutable
-      -> coro::Task<AbstractCloudProvider::Item> {
-        co_return co_await GetItemByPathComponents(
-            account->provider().get(), GetPathComponents(std::move(path)),
-            std::move(stop_token));
+      -> coro::Task<std::monostate> {
+        co_await cache_manager.Put(GetPathComponents(std::move(path)),
+                                   std::move(item), std::move(stop_token));
+        co_return std::monostate();
+      });
+}
+
+concurrency::task<void> CloudProviderAccountModel::PutDirectoryList(
+    AbstractCloudProvider::Directory directory,
+    std::vector<AbstractCloudProvider::Item> items,
+    concurrency::cancellation_token token) const {
+  co_await RunWinRt<std::monostate>(
+      event_loop_, std::move(token), *account_,
+      [directory = std::move(directory), items = std::move(items),
+       cache_manager = *cache_manager_](
+          CloudProviderAccount* account,
+          coro::stdx::stop_token stop_token) mutable
+      -> coro::Task<std::monostate> {
+        co_await cache_manager.Put(std::move(directory), std::move(items),
+                                   std::move(stop_token));
+        co_return std::monostate();
       });
 }
 

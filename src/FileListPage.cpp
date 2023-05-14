@@ -43,9 +43,10 @@ using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
 
 IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   page_model_ = e.Parameter().as<coro_cloudbrowser_winrt::FileListPageModel>();
+  auto account = page_model_.Account().as<CloudProviderAccountModel>();
+  auto path = winrt::to_string(page_model_.Path());
   FileList().ItemsSource(page_model_.Items());
-  Path().Text(
-      winrt::to_hstring(DecodeUri(winrt::to_string(page_model_.Path()))));
+  Path().Text(winrt::to_hstring(DecodeUri(path)));
 
   if (!page_model_.ScrollPosition().empty()) {
     co_await ListViewPersistenceHelper::SetRelativeScrollPositionAsync(
@@ -61,7 +62,28 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
         });
   }
 
-  co_await RefreshContent();
+  concurrency::cancellation_token_source stop_source;
+  auto stop_token = co_await winrt::get_cancellation_token();
+  stop_token.callback([stop_source] { stop_source.cancel(); });
+  if (page_model_.Items().Size() == 0) {
+    auto directory =
+        co_await account->GetItemByPathCache(path, stop_source.get_token());
+    if (directory) {
+      auto items = co_await account->GetDirectoryListCache(
+          std::get<AbstractCloudProvider::Directory>(*directory),
+          stop_source.get_token());
+      if (items) {
+        std::vector<coro_cloudbrowser_winrt::FileListEntryModel> cached;
+        for (auto item : *items) {
+          cached.push_back(winrt::make<FileListEntryModel>(account->Id(), path,
+                                                           std::move(item)));
+        }
+        page_model_.Items().ReplaceAll(cached);
+      }
+    }
+  }
+
+  co_await RefreshContent(stop_source.get_token());
 }
 
 void FileListPage::OnNavigatedFrom(const NavigationEventArgs&) {
@@ -163,7 +185,8 @@ void FileListPage::DownloadClick(const IInspectable&, const RoutedEventArgs&) {}
 
 void FileListPage::RefreshClick(const IInspectable&, const RoutedEventArgs&) {}
 
-IAsyncAction FileListPage::RefreshContent() {
+IAsyncAction FileListPage::RefreshContent(
+    concurrency::cancellation_token stop_token) {
   ProgressBar().Visibility(Visibility::Visible);
   auto at_exit = AtScopeExit([progress_bar = ProgressBar()] {
     progress_bar.Visibility(Visibility::Collapsed);
@@ -174,20 +197,19 @@ IAsyncAction FileListPage::RefreshContent() {
   auto current_items = page_model_.Items();
   bool empty = current_items.Size() == 0;
 
-  concurrency::cancellation_token_source stop_source;
-  auto stop_token = co_await winrt::get_cancellation_token();
-  stop_token.callback([stop_source] { stop_source.cancel(); });
-
   std::vector<coro_cloudbrowser_winrt::FileListEntryModel> updated;
   try {
-    auto directory = co_await account->GetItemByPath(winrt::to_string(path),
-                                                     stop_source.get_token());
+    auto directory = std::get<AbstractCloudProvider::Directory>(
+        co_await account->GetItemByPath(winrt::to_string(path), stop_token));
+    co_await account->PutItemByPath(winrt::to_string(path), directory,
+                                    stop_token);
     std::optional<std::string> page_token;
+    std::vector<AbstractCloudProvider::Item> items;
     do {
-      auto page = co_await account->ListDirectoryPage(
-          std::get<AbstractCloudProvider::Directory>(directory), page_token,
-          stop_source.get_token());
+      auto page = co_await account->ListDirectoryPage(directory, page_token,
+                                                      stop_token);
       for (auto item : page.items) {
+        items.emplace_back(item);
         auto entry = winrt::make<FileListEntryModel>(
             account->Id(), to_string(path), std::move(item));
         if (empty) {
@@ -198,6 +220,7 @@ IAsyncAction FileListPage::RefreshContent() {
       }
       page_token = std::move(page.next_page_token);
     } while (page_token);
+    co_await account->PutDirectoryList(directory, std::move(items), stop_token);
   } catch (const coro::Exception& e) {
     std::stringstream stream;
     stream << e.what() << '\n';
