@@ -89,8 +89,7 @@ class AccountListener {
           accounts)
       : event_loop_(event_loop), accounts_(std::move(accounts)) {}
 
-  winrt::fire_and_forget OnCreate(
-      std::shared_ptr<CloudProviderAccount> account) {
+  winrt::fire_and_forget OnCreate(CloudProviderAccount account) {
     co_await CoreApplication::MainView().Dispatcher().RunAsync(
         CoreDispatcherPriority::Normal,
         [event_loop = this->event_loop_, accounts = this->accounts_,
@@ -100,14 +99,13 @@ class AccountListener {
         });
   }
 
-  winrt::fire_and_forget OnDestroy(
-      std::shared_ptr<CloudProviderAccount> account) {
+  winrt::fire_and_forget OnDestroy(CloudProviderAccount account) {
     co_await CoreApplication::MainView().Dispatcher().RunAsync(
         CoreDispatcherPriority::Normal,
         [accounts = this->accounts_, account = std::move(account)] {
           for (uint32_t i = 0; i < accounts.Size();) {
             auto entry = accounts.GetAt(i).as<CloudProviderAccountModel>();
-            if (entry->Id() == account->id()) {
+            if (entry->Id() == account.id()) {
               accounts.RemoveAt(i);
             } else {
               i++;

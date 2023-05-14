@@ -26,7 +26,7 @@ using ::coro::util::AtScopeExit;
 template <typename T, typename F>
 concurrency::task<T> RunWinRt(coro::util::EventLoop* event_loop,
                               concurrency::cancellation_token token,
-                              std::shared_ptr<CloudProviderAccount> p, F func) {
+                              CloudProviderAccount p, F func) {
   winrt::apartment_context ui_thread;
   std::optional<std::variant<T, std::exception_ptr>> result;
   co_await coro::cloudbrowser::util::SwitchTo(event_loop);
@@ -42,9 +42,9 @@ concurrency::task<T> RunWinRt(coro::util::EventLoop* event_loop,
     auto token_deregistration =
         AtScopeExit([&] { token.deregister_callback(token_registration); });
     coro::stdx::stop_callback stop_callback(
-        p->stop_token(), [&] { stop_source.request_stop(); });
+        p.stop_token(), [&] { stop_source.request_stop(); });
     try {
-      result.emplace(co_await func(p.get(), stop_source.get_token()));
+      result.emplace(co_await func(&p, stop_source.get_token()));
     } catch (...) {
       result.emplace(std::current_exception());
     }
@@ -59,7 +59,7 @@ concurrency::task<T> RunWinRt(coro::util::EventLoop* event_loop,
 template <typename T, typename... FArgs, typename... Args>
 concurrency::task<T> RunWinRt(
     coro::util::EventLoop* event_loop, concurrency::cancellation_token token,
-    std::shared_ptr<CloudProviderAccount> p,
+    CloudProviderAccount p,
     coro::Task<T> (AbstractCloudProvider::*func)(FArgs...) const,
     Args... args) {
   return RunWinRt<T>(
@@ -84,7 +84,7 @@ std::vector<std::string> GetPathComponents(std::string path) {
 
 CloudProviderAccountModel::CloudProviderAccountModel(
     coro::util::EventLoop* event_loop,
-    std::shared_ptr<coro::cloudstorage::util::CloudProviderAccount> account)
+    coro::cloudstorage::util::CloudProviderAccount account)
     : event_loop_(event_loop),
       account_(std::move(account)),
       label_(to_hstring(account_->username())),
@@ -106,17 +106,14 @@ void CloudProviderAccountModel::Label(hstring label) {
 
 winrt::fire_and_forget CloudProviderAccountModel::final_release(
     std::unique_ptr<CloudProviderAccountModel> d) noexcept {
-  if (d->event_loop_ == nullptr) {
-    co_return;
-  }
   co_await coro::cloudbrowser::util::SwitchTo(d->event_loop_);
-  d->account_ = nullptr;
+  d->account_.reset();
 }
 
 concurrency::task<AbstractCloudProvider::Directory>
 CloudProviderAccountModel::GetRoot(
     concurrency::cancellation_token token) const {
-  return RunWinRt(event_loop_, std::move(token), account_,
+  return RunWinRt(event_loop_, std::move(token), *account_,
                   &AbstractCloudProvider::GetRoot);
 }
 
@@ -125,7 +122,7 @@ CloudProviderAccountModel::ListDirectoryPage(
     AbstractCloudProvider::Directory directory,
     std::optional<std::string> page_token,
     concurrency::cancellation_token token) const {
-  return RunWinRt(event_loop_, std::move(token), account_,
+  return RunWinRt(event_loop_, std::move(token), *account_,
                   &AbstractCloudProvider::ListDirectoryPage,
                   std::move(directory), std::move(page_token));
 }
@@ -134,7 +131,7 @@ concurrency::task<AbstractCloudProvider::Item>
 CloudProviderAccountModel::GetItemByPath(
     std::string path, concurrency::cancellation_token token) const {
   return RunWinRt<AbstractCloudProvider::Item>(
-      event_loop_, std::move(token), account_,
+      event_loop_, std::move(token), *account_,
       [path = std::move(path)](CloudProviderAccount* account,
                                coro::stdx::stop_token stop_token) mutable
       -> coro::Task<AbstractCloudProvider::Item> {
