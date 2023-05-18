@@ -225,6 +225,10 @@
       <DependentUpon>src\AddAccountPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClInclude>
+    <ClInclude Include="src\AddAccountPageModel.h">
+      <DependentUpon>src\AddAccountPageModel.idl</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="src\FilePreviewPage.h">
       <DependentUpon>src\FilePreviewPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -260,6 +264,10 @@
     </ClInclude>
     <ClInclude Include="src\MainPageModel.h">
       <DependentUpon>src\MainPageModel.idl</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
+    <ClInclude Include="src\WebViewPageModel.h">
+      <DependentUpon>src\WebViewPageModel.idl</DependentUpon>
       <SubType>Code</SubType>
     </ClInclude>
   </ItemGroup>
@@ -303,6 +311,10 @@
       <DependentUpon>src\AddAccountPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
+    <ClCompile Include="src\AddAccountPageModel.cpp">
+      <DependentUpon>src\AddAccountPageModel.idl</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="src\FilePreviewPage.cpp">
       <DependentUpon>src\FilePreviewPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -340,6 +352,10 @@
       <DependentUpon>src\MainPageModel.idl</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
+    <ClCompile Include="src\WebViewPageModel.cpp">
+      <DependentUpon>src\WebViewPageModel.idl</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="src/App.idl">
@@ -351,6 +367,9 @@
     <Midl Include="src\AddAccountPage.idl">
       <DependentUpon>src\AddAccountPage.xaml</DependentUpon>
       <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="src\AddAccountPageModel.idl">
+      <SubType>Designer</SubType>
     </Midl>
     <Midl Include="src\FilePreviewPage.idl">
       <DependentUpon>src\FilePreviewPage.xaml</DependentUpon>
@@ -380,6 +399,9 @@
       <SubType>Designer</SubType>
     </Midl>
     <Midl Include="src\MainPageModel.idl">
+      <SubType>Designer</SubType>
+    </Midl>
+    <Midl Include="src\WebViewPageModel.idl">
       <SubType>Designer</SubType>
     </Midl>
   </ItemGroup>

@@ -99,5 +99,11 @@
     <Midl Include="src\FilePreviewPageModel.idl">
       <Filter>Source</Filter>
     </Midl>
+    <Midl Include="src\AddAccountPageModel.idl">
+      <Filter>Source</Filter>
+    </Midl>
+    <Midl Include="src\WebViewPageModel.idl">
+      <Filter>Source</Filter>
+    </Midl>
   </ItemGroup>
 </Project>

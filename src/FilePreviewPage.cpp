@@ -3,6 +3,8 @@
 #include "FilePreviewPage.g.cpp"
 #endif
 
+#include "FilePreviewPageModel.h"
+
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
 using ::winrt::Windows::Foundation::IInspectable;
@@ -26,9 +28,10 @@ void FilePreviewPage::BackButtonClick(const IInspectable&,
 
 void FilePreviewPage::OnNavigatedTo(const NavigationEventArgs& args) {
   auto data = args.Parameter().as<FilePreviewPageModel>();
-  Filename().Text(data.Filename());
+  data->OnNavigatedTo()();
+  Filename().Text(data->Filename());
   MediaPlayer().Source(
-      MediaPlaybackItem(MediaSource::CreateFromUri(Uri(data.Uri()))));
+      MediaPlaybackItem(MediaSource::CreateFromUri(Uri(data->Uri()))));
 }
 
 void FilePreviewPage::OnNavigatingFrom(const NavigatingCancelEventArgs&) {

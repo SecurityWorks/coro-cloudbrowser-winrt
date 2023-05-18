@@ -60,6 +60,7 @@ GetCachedDirectoryList(const CloudProviderAccountModel* account,
 
 IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   page_model_ = e.Parameter().as<coro_cloudbrowser_winrt::FileListPageModel>();
+  page_model_.as<FileListPageModel>()->OnNavigatedTo()();
   auto account = page_model_.Account().as<CloudProviderAccountModel>();
   auto path = winrt::to_string(page_model_.Path());
   bool empty = page_model_.Items().Size() == 0;
@@ -108,6 +109,7 @@ void FileListPage::OnNavigatedFrom(const NavigationEventArgs&) {
           FileList(), [](const IInspectable& d) {
             return d.as<FileListEntryModel>()->Id();
           }));
+  page_model_ = nullptr;
 }
 
 void FileListPage::OnGettingFocus(const UIElement&,
@@ -124,14 +126,17 @@ void FileListPage::FileListEntryClick(const IInspectable&,
     winrt::hstring path = winrt::to_hstring(
         StrCat(winrt::to_string(page_model_.Path()),
                EncodeUri(winrt::to_string(entry->Filename())), '/'));
-    Frame().Navigate(
-        xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
-        winrt::make<FileListPageModel>(page_model_.Account(), std::move(path)));
+    Frame().Navigate(xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
+                     winrt::make<FileListPageModel>(
+                         page_model_.Account(),
+                         page_model_.as<FileListPageModel>()->OnNavigatedTo(),
+                         std::move(path)));
   } else if (entry->Type() == FileType::kAudio ||
              entry->Type() == FileType::kVideo) {
-    Frame().Navigate(
-        xaml_typename<coro_cloudbrowser_winrt::FilePreviewPage>(),
-        winrt::make<FilePreviewPageModel>(entry->Filename(), entry->Uri()));
+    Frame().Navigate(xaml_typename<coro_cloudbrowser_winrt::FilePreviewPage>(),
+                     winrt::make<FilePreviewPageModel>(
+                         entry->Filename(), entry->Uri(),
+                         page_model_.as<FileListPageModel>()->OnNavigatedTo()));
   }
 }
 

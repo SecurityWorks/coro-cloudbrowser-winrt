@@ -4,6 +4,7 @@
 #include "AddAccountPage.g.cpp"
 #endif
 
+#include "AddAccountPageModel.h"
 #include "CloudProviderTypeModel.h"
 #include "WebViewPage.h"
 
@@ -17,9 +18,9 @@ using ::winrt::Windows::UI::Xaml::Input::KeyRoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
 
 void AddAccountPage::OnNavigatedTo(const NavigationEventArgs& args) {
-  ItemListView().ItemsSource(
-      args.Parameter()
-          .as<IVector<coro_cloudbrowser_winrt::CloudProviderTypeModel>>());
+  const auto& page_model = args.Parameter().as<AddAccountPageModel>();
+  page_model->OnNavigatedTo()();
+  ItemListView().ItemsSource(page_model->ProviderTypes());
 }
 
 winrt::fire_and_forget AddAccountPage::ItemListViewItemClick(

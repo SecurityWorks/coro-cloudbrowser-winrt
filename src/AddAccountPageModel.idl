@@ -1,0 +1,7 @@
+import "CloudProviderTypeModel.idl";
+
+namespace coro_cloudbrowser_winrt {
+[bindable][default_interface] runtimeclass AddAccountPageModel {
+  IVector<CloudProviderTypeModel> ProviderTypes;
+}
+}  // namespace coro_cloudbrowser_winrt

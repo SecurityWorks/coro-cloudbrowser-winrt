@@ -1,0 +1,5 @@
+namespace coro_cloudbrowser_winrt {
+[bindable][default_interface] runtimeclass WebViewPageModel {
+  Windows.Foundation.Uri SourceUri;
+}
+}  // namespace coro_cloudbrowser_winrt

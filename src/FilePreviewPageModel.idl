@@ -1,7 +1,5 @@
 namespace coro_cloudbrowser_winrt {
 [bindable][default_interface] runtimeclass FilePreviewPageModel {
-  FilePreviewPageModel(String filename, String uri);
-
   String Filename;
   String Uri;
 }

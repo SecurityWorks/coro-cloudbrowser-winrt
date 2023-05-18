@@ -7,8 +7,10 @@
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 struct FileListPageModel : FileListPageModelT<FileListPageModel> {
   FileListPageModel(coro_cloudbrowser_winrt::CloudProviderAccountModel account,
-                    hstring path)
-      : account_(std::move(account)), path_(std::move(path)) {}
+                    std::function<void()> on_navigated_to, hstring path)
+      : account_(std::move(account)),
+        on_navigated_to_(std::move(on_navigated_to)),
+        path_(std::move(path)) {}
 
   coro_cloudbrowser_winrt::CloudProviderAccountModel Account() const {
     return account_;
@@ -35,8 +37,11 @@ struct FileListPageModel : FileListPageModelT<FileListPageModel> {
     throw hresult_not_implemented();
   }
 
+  auto OnNavigatedTo() const { return on_navigated_to_; }
+
  private:
   coro_cloudbrowser_winrt::CloudProviderAccountModel account_;
+  std::function<void()> on_navigated_to_;
   hstring path_;
   hstring scroll_position_;
   winrt::Windows::Foundation::Collections::IObservableVector<
@@ -45,9 +50,3 @@ struct FileListPageModel : FileListPageModelT<FileListPageModel> {
           coro_cloudbrowser_winrt::FileListEntryModel>();
 };
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
-
-namespace winrt::coro_cloudbrowser_winrt::factory_implementation {
-struct FileListPageModel
-    : FileListPageModelT<FileListPageModel, implementation::FileListPageModel> {
-};
-}  // namespace winrt::coro_cloudbrowser_winrt::factory_implementation
