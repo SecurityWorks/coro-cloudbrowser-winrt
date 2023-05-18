@@ -48,8 +48,7 @@ CloudProviderTypeModel::CloudProviderTypeModel(
     const coro::cloudstorage::util::AbstractCloudFactory& factory,
     coro::cloudstorage::util::AbstractCloudProvider::Type type)
     : name_(to_hstring(GetCloudProviderName(type))),
-      image_source_(to_hstring(fmt::format(CORO_CLOUDSTORAGE_REDIRECT_URI
-                                           "/static/{}.png",
+      image_source_(to_hstring(fmt::format("ms-appx:///Assets/providers/{}.png",
                                            factory.GetAuth(type).GetId()))),
       authorization_url_(
           to_hstring(factory.GetAuth(type).GetAuthorizationUrl().value_or(

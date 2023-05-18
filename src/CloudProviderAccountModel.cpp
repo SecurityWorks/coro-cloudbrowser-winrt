@@ -90,9 +90,8 @@ CloudProviderAccountModel::CloudProviderAccountModel(
       account_(std::move(account)),
       cache_manager_(std::move(cache_manager)),
       label_(to_hstring(account_->username())),
-      image_source_(to_hstring(fmt::format(
-          CORO_CLOUDSTORAGE_REDIRECT_URI "/static/{}.png", account_->type()))) {
-}
+      image_source_(to_hstring(fmt::format("ms-appx:///Assets/providers/{}.png",
+                                           account_->type()))) {}
 
 hstring CloudProviderAccountModel::ImageSource() const { return image_source_; }
 

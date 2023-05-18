@@ -32,6 +32,9 @@
     <Filter Include="Source">
       <UniqueIdentifier>{8656d2d9-af3c-4bbb-83c3-2036de4a60a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets\providers">
+      <UniqueIdentifier>{4faa10f2-3802-408f-b8c4-86b5c353da20}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\SplashScreen.png">
@@ -48,6 +51,39 @@
     </Image>
     <Image Include="Assets\logo_store.png">
       <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\providers\local.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\hubic.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\google.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\dropbox.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\box.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\amazons3.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\mega.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\onedrive.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\pcloud.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\webdav.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\yandex.png">
+      <Filter>Assets\providers</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>

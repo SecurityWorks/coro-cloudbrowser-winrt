@@ -414,6 +414,17 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\logo_store.png" />
+    <Image Include="Assets\providers\amazons3.png" />
+    <Image Include="Assets\providers\box.png" />
+    <Image Include="Assets\providers\dropbox.png" />
+    <Image Include="Assets\providers\google.png" />
+    <Image Include="Assets\providers\hubic.png" />
+    <Image Include="Assets\providers\local.png" />
+    <Image Include="Assets\providers\mega.png" />
+    <Image Include="Assets\providers\onedrive.png" />
+    <Image Include="Assets\providers\pcloud.png" />
+    <Image Include="Assets\providers\webdav.png" />
+    <Image Include="Assets\providers\yandex.png" />
     <Image Include="Assets\SplashScreen.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
