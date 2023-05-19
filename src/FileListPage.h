@@ -69,6 +69,7 @@ struct FileListPage : FileListPageT<FileListPage> {
 
  private:
   Windows::Foundation::IAsyncAction RefreshContent(
+      coro_cloudbrowser_winrt::FileListPageModel page_model,
       std::optional<coro::cloudstorage::util::AbstractCloudProvider::Directory>
           cached_parent,
       std::optional<
