@@ -7,6 +7,7 @@
 #include "AddAccountPageModel.h"
 #include "CloudProviderTypeModel.h"
 #include "WebViewPage.h"
+#include "WebViewPageModel.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
@@ -18,9 +19,14 @@ using ::winrt::Windows::UI::Xaml::Input::KeyRoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
 
 void AddAccountPage::OnNavigatedTo(const NavigationEventArgs& args) {
-  const auto& page_model = args.Parameter().as<AddAccountPageModel>();
-  page_model->OnNavigatedTo()();
-  ItemListView().ItemsSource(page_model->ProviderTypes());
+  page_model_ =
+      args.Parameter().as<coro_cloudbrowser_winrt::AddAccountPageModel>();
+  page_model_.as<AddAccountPageModel>()->OnNavigatedTo()();
+  ItemListView().ItemsSource(page_model_.ProviderTypes());
+}
+
+void AddAccountPage::OnNavigatedFrom(const NavigationEventArgs& args) {
+  page_model_ = nullptr;
 }
 
 winrt::fire_and_forget AddAccountPage::ItemListViewItemClick(
@@ -33,8 +39,11 @@ winrt::fire_and_forget AddAccountPage::ItemListViewItemClick(
     co_await Windows::System::Launcher::LaunchUriAsync(
         Windows::Foundation::Uri(authorization_url));
   } else {
-    Frame().Navigate(xaml_typename<coro_cloudbrowser_winrt::WebViewPage>(),
-                     winrt::box_value(authorization_url));
+    Frame().Navigate(
+        xaml_typename<coro_cloudbrowser_winrt::WebViewPage>(),
+        make<WebViewPageModel>(
+            Windows::Foundation::Uri(authorization_url),
+            page_model_.as<AddAccountPageModel>()->OnNavigatedTo()));
   }
 }
 
