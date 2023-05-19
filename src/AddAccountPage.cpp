@@ -25,7 +25,7 @@ void AddAccountPage::OnNavigatedTo(const NavigationEventArgs& args) {
   ItemListView().ItemsSource(page_model_.ProviderTypes());
 }
 
-void AddAccountPage::OnNavigatedFrom(const NavigationEventArgs& args) {
+void AddAccountPage::OnNavigatedFrom(const NavigationEventArgs&) {
   page_model_ = nullptr;
 }
 

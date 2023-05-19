@@ -8,6 +8,8 @@
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
+hstring ToString(const coro::cloudstorage::util::CloudProviderAccount::Id&);
+
 class CloudProviderAccountModel
     : public CloudProviderAccountModelT<CloudProviderAccountModel> {
  public:

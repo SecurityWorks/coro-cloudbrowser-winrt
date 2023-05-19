@@ -25,7 +25,8 @@ using ::winrt::Windows::UI::Xaml::Controls::Symbol;
 using ::winrt::Windows::UI::Xaml::Controls::SymbolIcon;
 using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
 
-constexpr std::wstring_view kAddAccountPageTag = L"account";
+constexpr std::wstring_view kAddAccountPageTag = L"add_account";
+constexpr std::wstring_view kAccountEntryTag = L"account";
 
 struct OnNavigatedToT {
   void operator()() const { navigation_view.SelectedItem(selected_item); }
@@ -45,6 +46,16 @@ void MainPage::OnNavigatedFrom(const NavigationEventArgs&) {
 }
 
 void MainPage::NavViewLoaded(IInspectable const&, RoutedEventArgs const&) {
+  NavigationView().MenuItems().Append(NavigationViewItemSeparator());
+
+  {
+    NavigationViewItem item;
+    item.Content(box_value(L"Add Account"));
+    item.Tag(box_value(kAddAccountPageTag));
+    item.Icon(SymbolIcon(Symbol::Add));
+    NavigationView().MenuItems().Append(std::move(item));
+  }
+
   accounts_changed_ = model_.Accounts().VectorChanged(
       [&](const auto& /*sender*/, const auto& /*args*/) { UpdateMenu(); });
   UpdateMenu();
@@ -87,23 +98,41 @@ void MainPage::MenuItemInvoked(
 }
 
 void MainPage::UpdateMenu() {
-  NavigationView().MenuItems().Clear();
-
+  std::unordered_set<hstring> current_tags;
   for (const auto& account : model_.Accounts()) {
+    current_tags.insert(
+        kAccountEntryTag +
+        ToString(account.as<CloudProviderAccountModel>()->Id()));
+  }
+  std::unordered_set<hstring> existing_tags;
+  auto menu_items = NavigationView().MenuItems();
+  for (uint32_t i = 0; i < menu_items.Size();) {
+    if (const auto view_item =
+            menu_items.GetAt(i).try_as<NavigationViewItem>()) {
+      hstring current_tag = unbox_value<hstring>(view_item.Tag());
+      if (current_tag.starts_with(kAccountEntryTag) &&
+          current_tags.find(current_tag) == current_tags.end()) {
+        menu_items.RemoveAt(i);
+      } else {
+        existing_tags.insert(std::move(current_tag));
+        i++;
+      }
+    } else {
+      i++;
+    }
+  }
+  for (const auto& account : model_.Accounts()) {
+    hstring current_tag =
+        kAccountEntryTag +
+        ToString(account.as<CloudProviderAccountModel>()->Id());
+    if (existing_tags.find(current_tag) != existing_tags.end()) {
+      continue;
+    }
     NavigationViewItem item;
     item.ContentTemplate(NavViewMenuItemTemplate());
     item.Content(account);
-    NavigationView().MenuItems().Append(std::move(item));
-  }
-
-  NavigationView().MenuItems().Append(NavigationViewItemSeparator());
-
-  {
-    NavigationViewItem item;
-    item.Content(box_value(L"Add Account"));
-    item.Tag(box_value(kAddAccountPageTag));
-    item.Icon(SymbolIcon(Symbol::Add));
-    NavigationView().MenuItems().Append(std::move(item));
+    item.Tag(box_value(current_tag));
+    menu_items.InsertAt(menu_items.Size() - 2, std::move(item));
   }
 
   auto accounts = model_.Accounts();
@@ -112,8 +141,8 @@ void MainPage::UpdateMenu() {
         xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
         winrt::make<FileListPageModel>(
             accounts.GetAt(accounts.Size() - 1),
-            OnNavigatedToT{NavigationView(), NavigationView().MenuItems().GetAt(
-                                                 accounts.Size() - 1)},
+            OnNavigatedToT{NavigationView(),
+                           menu_items.GetAt(accounts.Size() - 1)},
             /*path=*/L"/"));
   } else {
     ContentFrame().Navigate(
@@ -121,8 +150,7 @@ void MainPage::UpdateMenu() {
         winrt::make<AddAccountPageModel>(
             model_.ProviderTypes(),
             OnNavigatedToT{NavigationView(),
-                           NavigationView().MenuItems().GetAt(
-                               NavigationView().MenuItems().Size() - 1)}));
+                           menu_items.GetAt(menu_items.Size() - 1)}));
   }
 }
 

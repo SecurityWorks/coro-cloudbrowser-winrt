@@ -10,6 +10,8 @@
 #include <coro/util/raii_utils.h>
 #include <fmt/format.h>
 
+#include <nlohmann/json.hpp>
+
 #include "EventLoopUtils.h"
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
@@ -81,6 +83,13 @@ std::vector<std::string> GetPathComponents(std::string path) {
 }
 
 }  // namespace
+
+hstring ToString(const coro::cloudstorage::util::CloudProviderAccount::Id& id) {
+  nlohmann::json json;
+  json["type"] = id.type;
+  json["username"] = id.username;
+  return to_hstring(json.dump());
+}
 
 CloudProviderAccountModel::CloudProviderAccountModel(
     coro::util::EventLoop* event_loop,
