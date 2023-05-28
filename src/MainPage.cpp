@@ -91,7 +91,8 @@ void MainPage::MenuItemInvoked(
             xaml_typename<coro_cloudbrowser_winrt::FileListPage>(),
             winrt::make<FileListPageModel>(
                 std::move(account), OnNavigatedToT{NavigationView(), item},
-                /*path=*/L"/"));
+                /*path=*/L"/",
+                /*directory_id=*/L""));
       }
     }
   }
@@ -143,7 +144,8 @@ void MainPage::UpdateMenu() {
             accounts.GetAt(accounts.Size() - 1),
             OnNavigatedToT{NavigationView(),
                            menu_items.GetAt(accounts.Size() - 1)},
-            /*path=*/L"/"));
+            /*path=*/L"/",
+            /*directory_id=*/L""));
   } else {
     ContentFrame().Navigate(
         xaml_typename<coro_cloudbrowser_winrt::AddAccountPage>(),

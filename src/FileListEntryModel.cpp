@@ -25,21 +25,22 @@ using ::winrt::Windows::UI::Xaml::Data::PropertyChangedEventArgs;
 using ::winrt::Windows::UI::Xaml::Data::PropertyChangedEventHandler;
 
 std::string GetFileUri(const CloudProviderAccount::Id& id,
-                       std::string_view path,
                        const AbstractCloudProvider::Item& item) {
   if (const auto* file = std::get_if<AbstractCloudProvider::File>(&item);
-      file && [&] {
-        switch (GetFileType(file->mime_type)) {
-          case coro::cloudstorage::util::FileType::kImage:
-          case coro::cloudstorage::util::FileType::kVideo:
-            return true;
-          default:
-            return false;
-        }
-      }()) {
-    return fmt::format(CORO_CLOUDSTORAGE_REDIRECT_URI "/list/{}/{}{}", id.type,
-                       EncodeUri(id.username),
-                       StrCat(path, EncodeUri(file->name)));
+      file) {
+    return fmt::format(CORO_CLOUDSTORAGE_REDIRECT_URI "/content/{}/{}/{}",
+                       id.type, EncodeUri(id.username), EncodeUri(file->id));
+  } else {
+    return "";
+  }
+}
+
+std::string GetThumbnailUri(const CloudProviderAccount::Id& id,
+                            const AbstractCloudProvider::Item& item) {
+  if (const auto* file = std::get_if<AbstractCloudProvider::File>(&item);
+      file) {
+    return fmt::format(CORO_CLOUDSTORAGE_REDIRECT_URI "/thumbnail/{}/{}/{}",
+                       id.type, EncodeUri(id.username), EncodeUri(file->id));
   } else {
     return "";
   }
@@ -110,14 +111,14 @@ hstring GetFilename(const AbstractCloudProvider::Item& item) {
 
 FileListEntryModel::FileListEntryModel(
     const coro::cloudstorage::util::CloudProviderAccount::Id& account_id,
-    std::string_view directory,
     const coro::cloudstorage::util::AbstractCloudProvider::Item& item)
     : size_(GetSize(item)),
       id_(GetId(item)),
       filename_(GetFilename(item)),
       type_(GetFileType(item)),
       timestamp_(GetTimestamp(item)),
-      uri_(to_hstring(GetFileUri(account_id, directory, item))) {}
+      uri_(to_hstring(GetFileUri(account_id, item))),
+      thumbnail_uri_(to_hstring(GetThumbnailUri(account_id, item))) {}
 
 void FileListEntryModel::Size(hstring size) {
   if (size_ != size) {
@@ -150,13 +151,18 @@ void FileListEntryModel::Timestamp(hstring timestamp) {
 
 hstring FileListEntryModel::Timestamp() const { return timestamp_; }
 
-void FileListEntryModel::Thumbnail(hstring) { throw hresult_not_implemented(); }
+void FileListEntryModel::Thumbnail(hstring uri) {
+  if (thumbnail_uri_ != uri) {
+    thumbnail_uri_ = std::move(uri);
+    property_changed_(*this, PropertyChangedEventArgs(L"Thumbnail"));
+  }
+}
 
 hstring FileListEntryModel::Thumbnail() const {
   switch (Type()) {
     case FileType::kImage:
     case FileType::kVideo:
-      return uri_ + L"?thumbnail=true";
+      return thumbnail_uri_;
     default:
       return L"";
   }
@@ -218,7 +224,6 @@ void FileListEntryModel::Uri(hstring uri) {
   if (uri_ != uri) {
     uri_ = std::move(uri);
     property_changed_(*this, PropertyChangedEventArgs(L"Uri"));
-    property_changed_(*this, PropertyChangedEventArgs(L"Thumbnail"));
   }
 }
 
@@ -238,6 +243,7 @@ void FileListEntryModel::Update(
   Timestamp(updated.Timestamp());
   Type(updated.Type());
   Uri(updated.Uri());
+  Thumbnail(updated.Thumbnail());
 }
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

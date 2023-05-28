@@ -21,6 +21,7 @@ namespace winrt::coro_cloudbrowser_winrt::implementation {
 namespace {
 
 using ::coro::cloudstorage::util::AbstractCloudProvider;
+using ::coro::cloudstorage::util::ListDirectory;
 using ::coro::cloudstorage::util::StrCat;
 using ::coro::http::DecodeUri;
 using ::coro::http::EncodeUri;
@@ -41,21 +42,6 @@ using ::winrt::Windows::UI::Xaml::Input::KeyRoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::Media::Animation::Storyboard;
 using ::winrt::Windows::UI::Xaml::Navigation::NavigationEventArgs;
 
-concurrency::task<
-    std::pair<std::optional<AbstractCloudProvider::Directory>,
-              std::optional<std::vector<AbstractCloudProvider::Item>>>>
-GetCachedDirectoryList(const CloudProviderAccountModel* account,
-                       std::string path,
-                       Concurrency::cancellation_token stop_token) {
-  auto item = co_await account->GetItemByPathCache(path, stop_token);
-  if (!item) {
-    co_return {std::nullopt, std::nullopt};
-  }
-  auto directory = std::get<AbstractCloudProvider::Directory>(*item);
-  co_return {directory,
-             co_await account->GetDirectoryListCache(directory, stop_token)};
-}
-
 }  // namespace
 
 IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
@@ -65,6 +51,7 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   page_model.as<FileListPageModel>()->OnNavigatedTo()();
   auto account = page_model.Account().as<CloudProviderAccountModel>();
   auto path = winrt::to_string(page_model_.Path());
+  auto directory_id = winrt::to_string(page_model_.DirectoryId());
   bool empty = page_model.Items().Size() == 0;
   FileList().ItemsSource(page_model.Items());
   Path().Text(winrt::to_hstring(DecodeUri(path)));
@@ -86,23 +73,9 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
             co_return nullptr;
           });
     }
-    co_await RefreshContent(
-        std::move(page_model), /*cached_parent=*/std::nullopt,
-        /*cached_item_list=*/std::nullopt, stop_source.get_token());
-    co_return;
   }
-  auto [cached_parent, cached_item_list] = co_await GetCachedDirectoryList(
-      account.get(), path, stop_source.get_token());
-  if (cached_item_list) {
-    std::vector<coro_cloudbrowser_winrt::FileListEntryModel> cached_entries;
-    for (auto item : *cached_item_list) {
-      cached_entries.push_back(winrt::make<FileListEntryModel>(
-          account->Id(), path, std::move(item)));
-    }
-    page_model.Items().ReplaceAll(cached_entries);
-  }
-  co_await RefreshContent(std::move(page_model), std::move(cached_parent),
-                          std::move(cached_item_list), stop_source.get_token());
+
+  co_await RefreshContent(std::move(page_model), stop_source.get_token());
 }
 
 void FileListPage::OnNavigatedFrom(const NavigationEventArgs&) {
@@ -132,7 +105,7 @@ void FileListPage::FileListEntryClick(const IInspectable&,
                      winrt::make<FileListPageModel>(
                          page_model_.Account(),
                          page_model_.as<FileListPageModel>()->OnNavigatedTo(),
-                         std::move(path)));
+                         std::move(path), entry->Id()));
   } else if (entry->Type() == FileType::kAudio ||
              entry->Type() == FileType::kVideo) {
     Frame().Navigate(xaml_typename<coro_cloudbrowser_winrt::FilePreviewPage>(),
@@ -210,8 +183,6 @@ void FileListPage::RefreshClick(const IInspectable&, const RoutedEventArgs&) {}
 
 IAsyncAction FileListPage::RefreshContent(
     coro_cloudbrowser_winrt::FileListPageModel page_model,
-    std::optional<AbstractCloudProvider::Directory> cached_parent,
-    std::optional<std::vector<AbstractCloudProvider::Item>> cached_item_list,
     concurrency::cancellation_token stop_token) {
   ProgressBar().Visibility(Visibility::Visible);
   auto at_exit = AtScopeExit([progress_bar = ProgressBar()] {
@@ -219,55 +190,30 @@ IAsyncAction FileListPage::RefreshContent(
   });
 
   auto path = page_model.Path();
+  auto directory_id = page_model.DirectoryId();
   auto account = page_model.Account().as<CloudProviderAccountModel>();
-  auto* provider = account->Provider();
   auto current_items = page_model.Items();
   bool empty = current_items.Size() == 0;
 
-  std::vector<coro_cloudbrowser_winrt::FileListEntryModel> updated;
-  try {
-    auto directory = std::get<AbstractCloudProvider::Directory>(
-        co_await account->GetItemByPath(winrt::to_string(path), stop_token));
-    if (!cached_parent ||
-        provider->ToJson(directory) != provider->ToJson(*cached_parent))
-      co_await account->PutItemByPath(winrt::to_string(path), directory,
-                                      stop_token);
-    std::optional<std::string> page_token;
-    std::vector<AbstractCloudProvider::Item> items;
-    do {
-      auto page = co_await account->ListDirectoryPage(directory, page_token,
-                                                      stop_token);
-      for (auto item : page.items) {
-        items.emplace_back(item);
-        auto entry = winrt::make<FileListEntryModel>(
-            account->Id(), to_string(path), std::move(item));
-        if (empty) {
-          current_items.Append(std::move(entry));
-        } else {
-          updated.emplace_back(std::move(entry));
-        }
+  auto updated = std::make_shared<
+      coro::Promise<std::optional<std::vector<AbstractCloudProvider::Item>>>>();
+  auto directory =
+      std::get<AbstractCloudProvider::Directory>(co_await account->GetItemById(
+          winrt::to_string(directory_id), stop_token));
+  std::vector<AbstractCloudProvider::Item> items;
+  FOR_CO_AWAIT(auto page,
+               account->ListDirectory(directory, updated, stop_token)) {
+    for (auto item : page.items) {
+      if (empty) {
+        auto entry =
+            winrt::make<FileListEntryModel>(account->Id(), std::move(item));
+        current_items.Append(std::move(entry));
       }
-      page_token = std::move(page.next_page_token);
-    } while (page_token);
-    if (!cached_item_list ||
-        std::equal(
-            items.begin(), items.end(), cached_item_list->begin(),
-            cached_item_list->end(),
-            [provider = account->Provider()](const auto& i1, const auto& i2) {
-              return provider->ToJson(i1) == provider->ToJson(i2);
-            })) {
-      co_await account->PutDirectoryList(directory, std::move(items),
-                                         stop_token);
     }
-  } catch (const coro::Exception& e) {
-    std::stringstream stream;
-    stream << e.what() << '\n';
-    stream << winrt::to_string(path) << '\n';
-    OutputDebugStringA(stream.str().c_str());
-    co_return;
   }
 
-  if (empty) {
+  auto updated_items = co_await *updated;
+  if (!updated_items) {
     co_return;
   }
 
@@ -277,7 +223,9 @@ IAsyncAction FileListPage::RefreshContent(
   }
 
   std::unordered_set<hstring> current;
-  for (auto entry : updated) {
+  for (auto item : *updated_items) {
+    auto entry =
+        winrt::make<FileListEntryModel>(account->Id(), std::move(item));
     current.insert(entry.Id());
     auto it = previous.find(entry.Id());
     if (it == previous.end()) {

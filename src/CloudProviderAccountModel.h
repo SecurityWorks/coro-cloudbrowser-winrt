@@ -28,31 +28,20 @@ class CloudProviderAccountModel
   const auto* Provider() const { return account_->provider().get(); }
 
   concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::Item>
-  GetItemByPath(std::string path, concurrency::cancellation_token) const;
+  GetItemById(std::string id, concurrency::cancellation_token) const;
 
-  concurrency::task<
-      std::optional<coro::cloudstorage::util::AbstractCloudProvider::Item>>
-  GetItemByPathCache(std::string path, concurrency::cancellation_token) const;
-
-  concurrency::task<void> PutItemByPath(
-      std::string path, coro::cloudstorage::util::AbstractCloudProvider::Item,
+  coro::Generator<coro::cloudstorage::util::AbstractCloudProvider::PageData>
+  ListDirectory(
+      coro::cloudstorage::util::AbstractCloudProvider::Directory directory,
+      std::shared_ptr<coro::Promise<std::optional<
+          std::vector<coro::cloudstorage::util::AbstractCloudProvider::Item>>>>
+          updated,
       concurrency::cancellation_token);
 
   concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::PageData>
   ListDirectoryPage(
       coro::cloudstorage::util::AbstractCloudProvider::Directory directory,
       std::optional<std::string> page_token,
-      concurrency::cancellation_token) const;
-
-  concurrency::task<std::optional<
-      std::vector<coro::cloudstorage::util::AbstractCloudProvider::Item>>>
-  GetDirectoryListCache(
-      coro::cloudstorage::util::AbstractCloudProvider::Directory directory,
-      concurrency::cancellation_token) const;
-
-  concurrency::task<void> PutDirectoryList(
-      coro::cloudstorage::util::AbstractCloudProvider::Directory directory,
-      std::vector<coro::cloudstorage::util::AbstractCloudProvider::Item>,
       concurrency::cancellation_token) const;
 
   static winrt::fire_and_forget final_release(

@@ -5,6 +5,7 @@ namespace coro_cloudbrowser_winrt {
 [bindable][default_interface] runtimeclass FileListPageModel {
   CloudProviderAccountModel Account;
   String Path;
+  String DirectoryId;
   String ScrollPosition;
   IObservableVector<FileListEntryModel> Items;
 }

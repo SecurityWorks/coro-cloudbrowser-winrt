@@ -9,7 +9,6 @@ namespace winrt::coro_cloudbrowser_winrt::implementation {
 struct FileListEntryModel : FileListEntryModelT<FileListEntryModel> {
   FileListEntryModel(
       const coro::cloudstorage::util::CloudProviderAccount::Id& account_id,
-      std::string_view directory,
       const coro::cloudstorage::util::AbstractCloudProvider::Item& item);
 
   void Size(hstring);
@@ -59,6 +58,7 @@ struct FileListEntryModel : FileListEntryModelT<FileListEntryModel> {
       Windows::UI::Xaml::Visibility::Visible;
   FileType type_;
   hstring uri_;
+  hstring thumbnail_uri_;
   winrt::event<Windows::UI::Xaml::Data::PropertyChangedEventHandler>
       property_changed_;
 };

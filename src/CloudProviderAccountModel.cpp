@@ -131,74 +131,83 @@ CloudProviderAccountModel::ListDirectoryPage(
                   std::move(directory), std::move(page_token));
 }
 
-concurrency::task<std::optional<std::vector<AbstractCloudProvider::Item>>>
-CloudProviderAccountModel::GetDirectoryListCache(
-    coro::cloudstorage::util::AbstractCloudProvider::Directory directory,
-    concurrency::cancellation_token token) const {
-  return RunWinRt<std::optional<std::vector<AbstractCloudProvider::Item>>>(
-      event_loop_, std::move(token), *account_,
-      [directory = std::move(directory), cache_manager = *cache_manager_](
-          CloudProviderAccount*, coro::stdx::stop_token stop_token) mutable
-      -> coro::Task<std::optional<std::vector<AbstractCloudProvider::Item>>> {
-        return cache_manager.Get(std::move(directory), std::move(stop_token));
-      });
-}
-
-concurrency::task<AbstractCloudProvider::Item>
-CloudProviderAccountModel::GetItemByPath(
-    std::string path, concurrency::cancellation_token token) const {
+concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::Item>
+CloudProviderAccountModel::GetItemById(
+    std::string id, concurrency::cancellation_token token) const {
   return RunWinRt<AbstractCloudProvider::Item>(
       event_loop_, std::move(token), *account_,
-      [path = std::move(path)](CloudProviderAccount* account,
-                               coro::stdx::stop_token stop_token) mutable {
-        return GetItemByPathComponents(account->provider().get(),
-                                       GetPathComponents(std::move(path)),
-                                       std::move(stop_token));
-      });
-}
-
-concurrency::task<std::optional<AbstractCloudProvider::Item>>
-CloudProviderAccountModel::GetItemByPathCache(
-    std::string path, concurrency::cancellation_token token) const {
-  return RunWinRt<std::optional<AbstractCloudProvider::Item>>(
-      event_loop_, std::move(token), *account_,
-      [path = std::move(path), cache_manager = *cache_manager_](
-          CloudProviderAccount*, coro::stdx::stop_token stop_token) mutable {
-        return cache_manager.Get(GetPathComponents(std::move(path)),
-                                 std::move(stop_token));
-      });
-}
-
-concurrency::task<void> CloudProviderAccountModel::PutItemByPath(
-    std::string path, AbstractCloudProvider::Item item,
-    concurrency::cancellation_token token) {
-  co_await RunWinRt<std::monostate>(
-      event_loop_, std::move(token), *account_,
-      [path = std::move(path), cache_manager = *cache_manager_,
-       item = std::move(item)](CloudProviderAccount* account,
-                               coro::stdx::stop_token stop_token) mutable
-      -> coro::Task<std::monostate> {
-        co_await cache_manager.Put(GetPathComponents(std::move(path)),
-                                   std::move(item), std::move(stop_token));
-        co_return std::monostate();
-      });
-}
-
-concurrency::task<void> CloudProviderAccountModel::PutDirectoryList(
-    AbstractCloudProvider::Directory directory,
-    std::vector<AbstractCloudProvider::Item> items,
-    concurrency::cancellation_token token) const {
-  co_await RunWinRt<std::monostate>(
-      event_loop_, std::move(token), *account_,
-      [directory = std::move(directory), items = std::move(items),
-       cache_manager = *cache_manager_](
+      [id = std::move(id), cache_manager = *cache_manager_](
           CloudProviderAccount* account,
-          coro::stdx::stop_token stop_token) mutable
-      -> coro::Task<std::monostate> {
-        co_await cache_manager.Put(std::move(directory), std::move(items),
-                                   std::move(stop_token));
-        co_return std::monostate();
+          coro::stdx::stop_token stop_token) mutable {
+        return ::coro::cloudstorage::util::GetItemById(
+            account->provider().get(), std::move(cache_manager),
+            /*updated=*/nullptr, std::move(id), std::move(stop_token));
       });
+}
+
+coro::Generator<coro::cloudstorage::util::AbstractCloudProvider::PageData>
+CloudProviderAccountModel::ListDirectory(
+    AbstractCloudProvider::Directory directory,
+    std::shared_ptr<
+        coro::Promise<std::optional<std::vector<AbstractCloudProvider::Item>>>>
+        updated,
+    concurrency::cancellation_token token) {
+  auto* event_loop = event_loop_;
+  auto account = *account_;
+  auto cache_manager = *cache_manager_;
+
+  winrt::apartment_context ui_thread;
+  co_await coro::cloudbrowser::util::SwitchTo(event_loop);
+
+  coro::stdx::stop_source stop_source;
+  auto token_registration =
+      token.register_callback([event_loop, stop_source]() mutable {
+        event_loop->RunOnEventLoop(
+            [stop_source = std::move(stop_source)]() mutable {
+              stop_source.request_stop();
+            });
+      });
+  auto token_deregistration =
+      AtScopeExit([&] { token.deregister_callback(token_registration); });
+  coro::stdx::stop_callback stop_callback(account.stop_token(),
+                                          [&] { stop_source.request_stop(); });
+  auto updated_internal = std::make_shared<
+      coro::Promise<std::optional<std::vector<AbstractCloudProvider::Item>>>>();
+
+  std::exception_ptr exception;
+  try {
+    FOR_CO_AWAIT(
+        auto page_data,
+        coro::cloudstorage::util::ListDirectory(
+            cache_manager, updated_internal, account_->provider().get(),
+            std::move(directory), stop_source.get_token())) {
+      co_await ui_thread;
+      co_yield page_data;
+      co_await coro::cloudbrowser::util::SwitchTo(event_loop);
+    }
+  } catch (...) {
+    exception = std::current_exception();
+  }
+
+  coro::RunTask([ui_thread, updated_internal = std::move(updated_internal),
+                 updated = std::move(updated)]() mutable -> coro::Task<> {
+    std::exception_ptr exception;
+    try {
+      auto items = co_await *updated_internal;
+      co_await ui_thread;
+      updated->SetValue(std::move(items));
+      co_return;
+    } catch (...) {
+      exception = std::current_exception();
+    }
+    co_await ui_thread;
+    updated->SetException(exception);
+  });
+
+  co_await ui_thread;
+  if (exception) {
+    std::rethrow_exception(exception);
+  }
 }
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
