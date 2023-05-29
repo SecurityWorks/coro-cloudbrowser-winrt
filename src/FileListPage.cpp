@@ -179,7 +179,13 @@ void FileListPage::MoveCancelClick(const IInspectable&,
 
 void FileListPage::DownloadClick(const IInspectable&, const RoutedEventArgs&) {}
 
-void FileListPage::RefreshClick(const IInspectable&, const RoutedEventArgs&) {}
+IAsyncAction FileListPage::RefreshClick(const IInspectable&,
+                                        const RoutedEventArgs&) {
+  concurrency::cancellation_token_source stop_source;
+  auto stop_token = co_await winrt::get_cancellation_token();
+  stop_token.callback([stop_source] { stop_source.cancel(); });
+  co_await RefreshContent(page_model_, stop_source.get_token());
+}
 
 IAsyncAction FileListPage::RefreshContent(
     coro_cloudbrowser_winrt::FileListPageModel page_model,
@@ -223,6 +229,7 @@ IAsyncAction FileListPage::RefreshContent(
   }
 
   std::unordered_set<hstring> current;
+  int offset = 0;
   for (auto item : *updated_items) {
     auto entry =
         winrt::make<FileListEntryModel>(account->Id(), std::move(item));
@@ -230,8 +237,11 @@ IAsyncAction FileListPage::RefreshContent(
     auto it = previous.find(entry.Id());
     if (it == previous.end()) {
       current_items.InsertAt(0, std::move(entry));
+      offset++;
     } else {
-      current_items.GetAt(it->second).as<FileListEntryModel>()->Update(entry);
+      current_items.GetAt(it->second + offset)
+          .as<FileListEntryModel>()
+          ->Update(entry);
     }
   }
 

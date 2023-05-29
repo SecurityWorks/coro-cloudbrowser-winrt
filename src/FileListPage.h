@@ -64,8 +64,9 @@ struct FileListPage : FileListPageT<FileListPage> {
   void DownloadClick(const Windows::Foundation::IInspectable&,
                      const Windows::UI::Xaml::RoutedEventArgs&);
 
-  void RefreshClick(const Windows::Foundation::IInspectable&,
-                    const Windows::UI::Xaml::RoutedEventArgs&);
+  Windows::Foundation::IAsyncAction RefreshClick(
+      const Windows::Foundation::IInspectable&,
+      const Windows::UI::Xaml::RoutedEventArgs&);
 
  private:
   Windows::Foundation::IAsyncAction RefreshContent(
