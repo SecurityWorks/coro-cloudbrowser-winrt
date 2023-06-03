@@ -1,7 +1,9 @@
 ﻿#pragma once
 
 #include <coro/cloudstorage/util/cache_manager.h>
+#include <coro/cloudstorage/util/clock.h>
 #include <coro/cloudstorage/util/cloud_provider_account.h>
+#include <coro/cloudstorage/util/cloud_provider_utils.h>
 #include <coro/util/event_loop.h>
 
 #include "CloudProviderAccountModel.g.h"
@@ -15,6 +17,7 @@ class CloudProviderAccountModel
  public:
   CloudProviderAccountModel(
       coro::util::EventLoop* event_loop,
+      const coro::cloudstorage::util::Clock* clock,
       coro::cloudstorage::util::CloudProviderCacheManager cache_manager,
       coro::cloudstorage::util::CloudProviderAccount account);
 
@@ -30,12 +33,8 @@ class CloudProviderAccountModel
   concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::Item>
   GetItemById(std::string id, concurrency::cancellation_token) const;
 
-  coro::Generator<coro::cloudstorage::util::AbstractCloudProvider::PageData>
-  ListDirectory(
+  coro::Task<coro::cloudstorage::util::VersionedDirectoryContent> ListDirectory(
       coro::cloudstorage::util::AbstractCloudProvider::Directory directory,
-      std::shared_ptr<coro::Promise<std::optional<
-          std::vector<coro::cloudstorage::util::AbstractCloudProvider::Item>>>>
-          updated,
       concurrency::cancellation_token);
 
   concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::PageData>
@@ -49,6 +48,7 @@ class CloudProviderAccountModel
 
  private:
   coro::util::EventLoop* event_loop_;
+  const coro::cloudstorage::util::Clock* clock_;
   std::optional<coro::cloudstorage::util::CloudProviderAccount> account_;
   std::optional<coro::cloudstorage::util::CloudProviderCacheManager>
       cache_manager_;

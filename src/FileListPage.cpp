@@ -201,14 +201,13 @@ IAsyncAction FileListPage::RefreshContent(
   auto current_items = page_model.Items();
   bool empty = current_items.Size() == 0;
 
-  auto updated = std::make_shared<
-      coro::Promise<std::optional<std::vector<AbstractCloudProvider::Item>>>>();
   auto directory =
       std::get<AbstractCloudProvider::Directory>(co_await account->GetItemById(
           winrt::to_string(directory_id), stop_token));
   std::vector<AbstractCloudProvider::Item> items;
-  FOR_CO_AWAIT(auto page,
-               account->ListDirectory(directory, updated, stop_token)) {
+  auto versioned_content =
+      co_await account->ListDirectory(directory, stop_token);
+  FOR_CO_AWAIT(auto page, std::move(versioned_content.content)) {
     for (auto item : page.items) {
       if (empty) {
         auto entry =
@@ -218,7 +217,7 @@ IAsyncAction FileListPage::RefreshContent(
     }
   }
 
-  auto updated_items = co_await *updated;
+  auto updated_items = co_await *versioned_content.updated;
   if (!updated_items) {
     co_return;
   }

@@ -87,10 +87,12 @@ class AccountListener {
  public:
   AccountListener(
       coro::util::EventLoop* event_loop,
+      const coro::cloudstorage::util::Clock* clock,
       coro::cloudstorage::util::CacheManager* cache_manager,
       IObservableVector<coro_cloudbrowser_winrt::CloudProviderAccountModel>
           accounts)
       : event_loop_(event_loop),
+        clock_(clock),
         cache_manager_(cache_manager),
         accounts_(std::move(accounts)) {}
 
@@ -98,11 +100,11 @@ class AccountListener {
     CloudProviderCacheManager cache_manager(account, cache_manager_);
     co_await CoreApplication::MainView().Dispatcher().RunAsync(
         CoreDispatcherPriority::Normal,
-        [event_loop = this->event_loop_, accounts = this->accounts_,
-         cache_manager = std::move(cache_manager),
+        [event_loop = this->event_loop_, clock = this->clock_,
+         accounts = this->accounts_, cache_manager = std::move(cache_manager),
          account = std::move(account)] {
           accounts.Append(make<CloudProviderAccountModel>(
-              event_loop, std::move(cache_manager), std::move(account)));
+              event_loop, clock, std::move(cache_manager), std::move(account)));
         });
   }
 
@@ -123,6 +125,7 @@ class AccountListener {
 
  private:
   coro::util::EventLoop* event_loop_;
+  const coro::cloudstorage::util::Clock* clock_;
   coro::cloudstorage::util::CacheManager* cache_manager_;
   IObservableVector<coro_cloudbrowser_winrt::CloudProviderAccountModel>
       accounts_;
@@ -144,7 +147,7 @@ nlohmann::json GetAuthData() { return nlohmann::json::parse(kAuthData); }
 Task<> App::RunHttpServer() {
   try {
     auto http_server = context_.CreateHttpServer(
-        AccountListener(&event_loop_, context_.cache(), accounts_));
+        AccountListener(&event_loop_, &clock_, context_.cache(), accounts_));
     init_semaphore_.SetValue();
     co_await quit_semaphore_;
     co_await http_server.Quit();

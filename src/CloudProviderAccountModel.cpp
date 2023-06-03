@@ -22,6 +22,7 @@ using ::coro::cloudstorage::util::AbstractCloudProvider;
 using ::coro::cloudstorage::util::CloudProviderAccount;
 using ::coro::cloudstorage::util::GetItemByPathComponents;
 using ::coro::cloudstorage::util::SplitString;
+using ::coro::cloudstorage::util::VersionedDirectoryContent;
 using ::coro::http::DecodeUri;
 using ::coro::util::AtScopeExit;
 
@@ -93,9 +94,11 @@ hstring ToString(const coro::cloudstorage::util::CloudProviderAccount::Id& id) {
 
 CloudProviderAccountModel::CloudProviderAccountModel(
     coro::util::EventLoop* event_loop,
+    const coro::cloudstorage::util::Clock* clock,
     coro::cloudstorage::util::CloudProviderCacheManager cache_manager,
     coro::cloudstorage::util::CloudProviderAccount account)
     : event_loop_(event_loop),
+      clock_(clock),
       account_(std::move(account)),
       cache_manager_(std::move(cache_manager)),
       label_(to_hstring(account_->username())),
@@ -131,30 +134,29 @@ CloudProviderAccountModel::ListDirectoryPage(
                   std::move(directory), std::move(page_token));
 }
 
-concurrency::task<coro::cloudstorage::util::AbstractCloudProvider::Item>
+concurrency::task<AbstractCloudProvider::Item>
 CloudProviderAccountModel::GetItemById(
     std::string id, concurrency::cancellation_token token) const {
   return RunWinRt<AbstractCloudProvider::Item>(
       event_loop_, std::move(token), *account_,
-      [id = std::move(id), cache_manager = *cache_manager_](
-          CloudProviderAccount* account,
-          coro::stdx::stop_token stop_token) mutable {
-        return ::coro::cloudstorage::util::GetItemById(
-            account->provider().get(), std::move(cache_manager),
-            /*updated=*/nullptr, std::move(id), std::move(stop_token));
+      [id = std::move(id), cache_manager = *cache_manager_,
+       current_time = clock_->Now()](CloudProviderAccount* account,
+                                     coro::stdx::stop_token stop_token) mutable
+      -> coro::Task<AbstractCloudProvider::Item> {
+        auto versioned = co_await ::coro::cloudstorage::util::GetItemById(
+            account->provider().get(), std::move(cache_manager), current_time,
+            std::move(id), std::move(stop_token));
+        co_return versioned.item;
       });
 }
 
-coro::Generator<coro::cloudstorage::util::AbstractCloudProvider::PageData>
-CloudProviderAccountModel::ListDirectory(
+coro::Task<VersionedDirectoryContent> CloudProviderAccountModel::ListDirectory(
     AbstractCloudProvider::Directory directory,
-    std::shared_ptr<
-        coro::Promise<std::optional<std::vector<AbstractCloudProvider::Item>>>>
-        updated,
     concurrency::cancellation_token token) {
   auto* event_loop = event_loop_;
   auto account = *account_;
   auto cache_manager = *cache_manager_;
+  int64_t current_time = clock_->Now();
 
   winrt::apartment_context ui_thread;
   co_await coro::cloudbrowser::util::SwitchTo(event_loop);
@@ -171,26 +173,16 @@ CloudProviderAccountModel::ListDirectory(
       AtScopeExit([&] { token.deregister_callback(token_registration); });
   coro::stdx::stop_callback stop_callback(account.stop_token(),
                                           [&] { stop_source.request_stop(); });
-  auto updated_internal = std::make_shared<
+
+  auto versioned = co_await ::coro::cloudstorage::util::ListDirectory(
+      std::move(cache_manager), current_time, account.provider().get(),
+      std::move(directory), stop_source.get_token());
+
+  auto updated = std::make_shared<
       coro::Promise<std::optional<std::vector<AbstractCloudProvider::Item>>>>();
 
-  std::exception_ptr exception;
-  try {
-    FOR_CO_AWAIT(
-        auto page_data,
-        coro::cloudstorage::util::ListDirectory(
-            cache_manager, updated_internal, account_->provider().get(),
-            std::move(directory), stop_source.get_token())) {
-      co_await ui_thread;
-      co_yield page_data;
-      co_await coro::cloudbrowser::util::SwitchTo(event_loop);
-    }
-  } catch (...) {
-    exception = std::current_exception();
-  }
-
-  coro::RunTask([ui_thread, updated_internal = std::move(updated_internal),
-                 updated = std::move(updated)]() mutable -> coro::Task<> {
+  coro::RunTask([ui_thread, updated_internal = std::move(versioned.updated),
+                 updated = updated]() mutable -> coro::Task<> {
     std::exception_ptr exception;
     try {
       auto items = co_await *updated_internal;
@@ -204,10 +196,27 @@ CloudProviderAccountModel::ListDirectory(
     updated->SetException(exception);
   });
 
-  co_await ui_thread;
-  if (exception) {
-    std::rethrow_exception(exception);
-  }
+  co_return VersionedDirectoryContent{
+      .content = [](auto* event_loop, auto content, auto ui_thread)
+          -> coro::Generator<AbstractCloudProvider::PageData> {
+        std::exception_ptr exception;
+        try {
+          FOR_CO_AWAIT(auto page_data, std::move(content)) {
+            co_await ui_thread;
+            co_yield page_data;
+            co_await coro::cloudbrowser::util::SwitchTo(event_loop);
+          }
+        } catch (...) {
+          exception = std::current_exception();
+        }
+        co_await ui_thread;
+        if (exception) {
+          std::rethrow_exception(exception);
+        }
+      }(event_loop, std::move(versioned.content), ui_thread),
+      .update_time = versioned.update_time,
+      .updated = std::move(updated),
+  };
 }
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
