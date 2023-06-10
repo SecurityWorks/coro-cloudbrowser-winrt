@@ -39,6 +39,7 @@ using ::winrt::Windows::Foundation::IAsyncAction;
 using ::winrt::Windows::Foundation::Uri;
 using ::winrt::Windows::Foundation::Collections::IObservableVector;
 using ::winrt::Windows::UI::Core::CoreDispatcherPriority;
+using ::winrt::Windows::UI::Popups::MessageDialog;
 using ::winrt::Windows::UI::Xaml::UnhandledExceptionEventArgs;
 using ::winrt::Windows::UI::Xaml::Window;
 using ::winrt::Windows::UI::Xaml::Controls::Frame;
@@ -301,7 +302,8 @@ winrt::fire_and_forget App::OnActivated(const IActivatedEventArgs& args) {
         co_await Windows::System::Launcher::LaunchUriAsync(location);
       } else {
         auto body = co_await response.Content().ReadAsStringAsync();
-        OutputDebugStringW(body.c_str());
+        co_await MessageDialog{body, L"Failed to add a new account."}
+            .ShowAsync();
       }
     } else if (uri.SchemeName() == L"cloudbrowser") {
       deep_link_event_(*this, uri);
