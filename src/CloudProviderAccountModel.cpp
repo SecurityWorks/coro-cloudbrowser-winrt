@@ -8,6 +8,7 @@
 #include <coro/http/http_parse.h>
 #include <coro/promise.h>
 #include <coro/util/raii_utils.h>
+#include <coro/util/stop_token_or.h>
 #include <fmt/format.h>
 
 #include <nlohmann/json.hpp>
@@ -25,6 +26,8 @@ using ::coro::cloudstorage::util::SplitString;
 using ::coro::cloudstorage::util::VersionedDirectoryContent;
 using ::coro::http::DecodeUri;
 using ::coro::util::AtScopeExit;
+using ::coro::util::MakeStopTokenOr;
+using ::coro::util::MakeUniqueStopTokenOr;
 
 template <typename T, typename F>
 concurrency::task<T> RunWinRt(coro::util::EventLoop* event_loop,
@@ -44,10 +47,10 @@ concurrency::task<T> RunWinRt(coro::util::EventLoop* event_loop,
         });
     auto token_deregistration =
         AtScopeExit([&] { token.deregister_callback(token_registration); });
-    coro::stdx::stop_callback stop_callback(
-        p.stop_token(), [&] { stop_source.request_stop(); });
+    auto stop_token_or =
+        MakeStopTokenOr(p.stop_token(), stop_source.get_token());
     try {
-      result.emplace(co_await func(&p, stop_source.get_token()));
+      result.emplace(co_await func(&p, stop_token_or.GetToken()));
     } catch (...) {
       result.emplace(std::current_exception());
     }
@@ -162,27 +165,24 @@ coro::Task<VersionedDirectoryContent> CloudProviderAccountModel::ListDirectory(
   co_await coro::cloudbrowser::util::SwitchTo(event_loop);
 
   coro::stdx::stop_source stop_source;
-  auto token_registration =
-      token.register_callback([event_loop, stop_source]() mutable {
-        event_loop->RunOnEventLoop(
-            [stop_source = std::move(stop_source)]() mutable {
-              stop_source.request_stop();
-            });
-      });
-  auto token_deregistration =
-      AtScopeExit([&] { token.deregister_callback(token_registration); });
-  coro::stdx::stop_callback stop_callback(account.stop_token(),
-                                          [&] { stop_source.request_stop(); });
+  token.register_callback([event_loop, stop_source]() mutable {
+    event_loop->RunOnEventLoop(
+        [stop_source = std::move(stop_source)]() mutable {
+          stop_source.request_stop();
+        });
+  });
+  auto stop_token_or =
+      MakeUniqueStopTokenOr(account.stop_token(), stop_source.get_token());
 
   auto versioned = co_await ::coro::cloudstorage::util::ListDirectory(
       std::move(cache_manager), current_time, account.provider().get(),
-      std::move(directory), stop_source.get_token());
+      std::move(directory), stop_token_or->GetToken());
 
   auto updated = std::make_shared<
       coro::Promise<std::optional<std::vector<AbstractCloudProvider::Item>>>>();
 
   coro::RunTask([ui_thread, updated_internal = std::move(versioned.updated),
-                 updated = updated]() mutable -> coro::Task<> {
+                 updated]() mutable -> coro::Task<> {
     std::exception_ptr exception;
     try {
       auto items = co_await *updated_internal;
@@ -197,7 +197,7 @@ coro::Task<VersionedDirectoryContent> CloudProviderAccountModel::ListDirectory(
   });
 
   co_return VersionedDirectoryContent{
-      .content = [](auto* event_loop, auto content, auto ui_thread)
+      .content = [](auto* event_loop, auto content, auto ui_thread, auto...)
           -> coro::Generator<AbstractCloudProvider::PageData> {
         std::exception_ptr exception;
         try {
@@ -213,7 +213,8 @@ coro::Task<VersionedDirectoryContent> CloudProviderAccountModel::ListDirectory(
         if (exception) {
           std::rethrow_exception(exception);
         }
-      }(event_loop, std::move(versioned.content), ui_thread),
+      }(event_loop, std::move(versioned.content), ui_thread,
+          std::move(stop_token_or)),
       .update_time = versioned.update_time,
       .updated = std::move(updated),
   };
