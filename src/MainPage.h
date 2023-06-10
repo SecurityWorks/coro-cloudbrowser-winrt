@@ -28,6 +28,7 @@ struct MainPage : MainPageT<MainPage> {
 
   event_token accounts_changed_;
   coro_cloudbrowser_winrt::MainPageModel model_{nullptr};
+  event_token deep_link_navigated_;
 };
 
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation

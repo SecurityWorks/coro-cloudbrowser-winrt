@@ -24,6 +24,8 @@ using ::coro::cloudstorage::util::CloudFactoryConfig;
 using ::coro::cloudstorage::util::CloudFactoryContext;
 using ::coro::cloudstorage::util::CloudProviderAccount;
 using ::coro::cloudstorage::util::CloudProviderCacheManager;
+using ::coro::cloudstorage::util::StrCat;
+using ::coro::http::EncodeUri;
 using ::coro::util::EventLoop;
 using ::winrt::Windows::ApplicationModel::SuspendingEventArgs;
 using ::winrt::Windows::ApplicationModel::Activation::ActivationKind;
@@ -83,6 +85,12 @@ constexpr std::string_view kAuthData = R"js({
     }
   })js";
 
+std::string GetPostAuthRedirectUri(std::string_view account_type,
+                                   std::string_view username) {
+  return StrCat("cloudbrowser:/list-items/", account_type, '/',
+                EncodeUri(username), "?path=/");
+}
+
 class AccountListener {
  public:
   AccountListener(
@@ -102,7 +110,7 @@ class AccountListener {
         CoreDispatcherPriority::Normal,
         [event_loop = this->event_loop_, clock = this->clock_,
          accounts = this->accounts_, cache_manager = std::move(cache_manager),
-         account = std::move(account)] {
+         account = std::move(account)]() mutable {
           accounts.Append(make<CloudProviderAccountModel>(
               event_loop, clock, std::move(cache_manager), std::move(account)));
         });
@@ -140,8 +148,6 @@ CreateCloudProviderTypes(const CloudFactory& factory) {
   return types;
 }
 
-nlohmann::json GetAuthData() { return nlohmann::json::parse(kAuthData); }
-
 }  // namespace
 
 Task<> App::RunHttpServer() {
@@ -165,9 +171,10 @@ Task<> App::RunHttpServer() {
 /// </summary>
 App::App()
     : context_(&event_loop_,
-               CloudFactoryConfig{.auth_data =
-                                      AuthData(CORO_CLOUDSTORAGE_REDIRECT_URI,
-                                               GetAuthData())}),
+               CloudFactoryConfig{
+                   .post_auth_redirect_uri = GetPostAuthRedirectUri,
+                   .auth_data = AuthData(CORO_CLOUDSTORAGE_REDIRECT_URI,
+                                         nlohmann::json::parse(kAuthData))}),
       accounts_(single_threaded_observable_vector<
                 coro_cloudbrowser_winrt::CloudProviderAccountModel>()),
       provider_types_(single_threaded_observable_vector<
@@ -232,9 +239,9 @@ winrt::fire_and_forget App::OnLaunched(LaunchActivatedEventArgs e) {
         // When the navigation stack isn't restored navigate to the first page,
         // configuring the new page by passing required information as a
         // navigation parameter
-        root_frame.Navigate(
-            xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
-            winrt::make<MainPageModel>(accounts_, provider_types_));
+        root_frame.Navigate(xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
+                            winrt::make<MainPageModel>(
+                                accounts_, provider_types_, &deep_link_event_));
       }
       // Place the frame in the current Window
       Window::Current().Content(root_frame);
@@ -247,9 +254,9 @@ winrt::fire_and_forget App::OnLaunched(LaunchActivatedEventArgs e) {
         // When the navigation stack isn't restored navigate to the first page,
         // configuring the new page by passing required information as a
         // navigation parameter
-        root_frame.Navigate(
-            xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
-            winrt::make<MainPageModel>(accounts_, provider_types_));
+        root_frame.Navigate(xaml_typename<coro_cloudbrowser_winrt::MainPage>(),
+                            winrt::make<MainPageModel>(
+                                accounts_, provider_types_, &deep_link_event_));
       }
       // Ensure the current window is active
       Window::Current().Activate();
@@ -284,12 +291,18 @@ winrt::fire_and_forget App::OnActivated(const IActivatedEventArgs& args) {
   if (args.Kind() == ActivationKind::Protocol) {
     auto protocol_event_args = args.as<ProtocolActivatedEventArgs>();
     auto uri = protocol_event_args.Uri();
-    hstring code = uri.QueryParsed().GetFirstValueByName(L"code");
-    Windows::Web::Http::HttpClient http;
-    co_await http.GetAsync(Uri(to_hstring(fmt::format(
-        CORO_CLOUDSTORAGE_REDIRECT_URI "/auth{}?code={}",
-        to_string(!uri.Host().empty() ? (L"/" + uri.Host()) : uri.Path()),
-        to_string(code)))));
+    if (uri.SchemeName() == L"cloudbrowser.oauth") {
+      hstring code = uri.QueryParsed().GetFirstValueByName(L"code");
+      auto response = co_await http_.GetAsync(Uri(to_hstring(fmt::format(
+          CORO_CLOUDSTORAGE_REDIRECT_URI "/auth{}?code={}",
+          to_string(!uri.Host().empty() ? (L"/" + uri.Host()) : uri.Path()),
+          to_string(code)))));
+      if (auto location = response.Headers().Location()) {
+        co_await Windows::System::Launcher::LaunchUriAsync(location);
+      }
+    } else if (uri.SchemeName() == L"cloudbrowser") {
+      deep_link_event_(*this, uri);
+    }
   }
 }
 

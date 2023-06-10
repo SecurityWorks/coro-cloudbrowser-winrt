@@ -33,6 +33,11 @@
             <uap:DisplayName>Cloud Storage Browser</uap:DisplayName>
           </uap:Protocol>
         </uap:Extension>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="cloudbrowser">
+            <uap:DisplayName>Cloud Storage Browser</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
       </Extensions>
     </Application>
   </Applications>

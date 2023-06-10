@@ -5,6 +5,10 @@
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 
+inline constexpr std::wstring_view kCurrentAccountKey = L"current_account";
+inline constexpr std::wstring_view kAccountTypeKey = L"account_type";
+inline constexpr std::wstring_view kAccountUsernameKey = L"account_username";
+
 struct FileListPage : FileListPageT<FileListPage> {
   Windows::Foundation::IAsyncAction OnNavigatedTo(
       Windows::UI::Xaml::Navigation::NavigationEventArgs e);

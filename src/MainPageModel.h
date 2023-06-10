@@ -6,14 +6,18 @@
 
 namespace winrt::coro_cloudbrowser_winrt::implementation {
 struct MainPageModel : MainPageModelT<MainPageModel> {
-  MainPageModel(Windows::Foundation::Collections::IObservableVector<
-                    coro_cloudbrowser_winrt::CloudProviderAccountModel>
-                    accounts,
-                Windows::Foundation::Collections::IVector<
-                    coro_cloudbrowser_winrt::CloudProviderTypeModel>
-                    provider_types)
+  MainPageModel(
+      Windows::Foundation::Collections::IObservableVector<
+          coro_cloudbrowser_winrt::CloudProviderAccountModel>
+          accounts,
+      Windows::Foundation::Collections::IVector<
+          coro_cloudbrowser_winrt::CloudProviderTypeModel>
+          provider_types,
+      winrt::event<Windows::Foundation::EventHandler<Windows::Foundation::Uri>>*
+          deep_link_event)
       : accounts_(std::move(accounts)),
-        provider_types_(std::move(provider_types)) {}
+        provider_types_(std::move(provider_types)),
+        deep_link_event_(deep_link_event) {}
 
   Windows::Foundation::Collections::IObservableVector<
       coro_cloudbrowser_winrt::CloudProviderAccountModel>
@@ -35,6 +39,8 @@ struct MainPageModel : MainPageModelT<MainPageModel> {
     throw hresult_not_implemented();
   }
 
+  auto* deep_link_event() const { return deep_link_event_; }
+
  private:
   Windows::Foundation::Collections::IObservableVector<
       coro_cloudbrowser_winrt::CloudProviderAccountModel>
@@ -42,10 +48,7 @@ struct MainPageModel : MainPageModelT<MainPageModel> {
   Windows::Foundation::Collections::IVector<
       coro_cloudbrowser_winrt::CloudProviderTypeModel>
       provider_types_;
+  winrt::event<Windows::Foundation::EventHandler<Windows::Foundation::Uri>>*
+      deep_link_event_;
 };
 }  // namespace winrt::coro_cloudbrowser_winrt::implementation
-
-namespace winrt::coro_cloudbrowser_winrt::factory_implementation {
-struct MainPageModel
-    : MainPageModelT<MainPageModel, implementation::MainPageModel> {};
-}  // namespace winrt::coro_cloudbrowser_winrt::factory_implementation

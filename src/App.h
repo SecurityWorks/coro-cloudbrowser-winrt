@@ -41,6 +41,9 @@ struct App : AppT<App> {
   winrt::Windows::Foundation::Collections::IVector<
       coro_cloudbrowser_winrt::CloudProviderTypeModel>
       provider_types_;
+  Windows::Web::Http::HttpClient http_;
+  winrt::event<Windows::Foundation::EventHandler<Windows::Foundation::Uri>>
+      deep_link_event_;
   std::future<void> thread_;
 };
 

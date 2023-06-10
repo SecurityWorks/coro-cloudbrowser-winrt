@@ -29,6 +29,9 @@ using ::coro::util::AtScopeExit;
 using ::winrt::Windows::Foundation::IAsyncAction;
 using ::winrt::Windows::Foundation::IAsyncOperation;
 using ::winrt::Windows::Foundation::IInspectable;
+using ::winrt::Windows::Storage::ApplicationData;
+using ::winrt::Windows::Storage::ApplicationDataCompositeValue;
+using ::winrt::Windows::Storage::ApplicationDataContainer;
 using ::winrt::Windows::UI::Xaml::DependencyProperty;
 using ::winrt::Windows::UI::Xaml::ExceptionRoutedEventArgs;
 using ::winrt::Windows::UI::Xaml::RoutedEventArgs;
@@ -55,6 +58,14 @@ IAsyncAction FileListPage::OnNavigatedTo(NavigationEventArgs e) {
   bool empty = page_model.Items().Size() == 0;
   FileList().ItemsSource(page_model.Items());
   Path().Text(winrt::to_hstring(DecodeUri(path)));
+
+  ApplicationDataCompositeValue current_account;
+  current_account.Insert(kAccountTypeKey,
+                         winrt::box_value(to_hstring(account->Id().type)));
+  current_account.Insert(kAccountUsernameKey,
+                         winrt::box_value(to_hstring(account->Id().username)));
+  ApplicationData::Current().LocalSettings().Values().Insert(
+      kCurrentAccountKey, std::move(current_account));
 
   concurrency::cancellation_token_source stop_source;
   auto stop_token = co_await winrt::get_cancellation_token();
