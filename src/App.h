@@ -31,7 +31,6 @@ struct App : AppT<App> {
   coro::Task<> RunHttpServer();
 
   coro::util::EventLoop event_loop_;
-  coro::cloudstorage::util::Clock clock_;
   coro::cloudstorage::util::CloudFactoryContext context_;
   coro::Promise<void> init_semaphore_;
   coro::Promise<void> quit_semaphore_;

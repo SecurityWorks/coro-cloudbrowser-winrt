@@ -17,8 +17,6 @@ class CloudProviderAccountModel
  public:
   CloudProviderAccountModel(
       coro::util::EventLoop* event_loop,
-      const coro::cloudstorage::util::Clock* clock,
-      coro::cloudstorage::util::CloudProviderCacheManager cache_manager,
       coro::cloudstorage::util::CloudProviderAccount account);
 
   hstring ImageSource() const;
@@ -50,8 +48,6 @@ class CloudProviderAccountModel
   coro::util::EventLoop* event_loop_;
   const coro::cloudstorage::util::Clock* clock_;
   std::optional<coro::cloudstorage::util::CloudProviderAccount> account_;
-  std::optional<coro::cloudstorage::util::CloudProviderCacheManager>
-      cache_manager_;
   hstring image_source_;
   hstring label_;
 };

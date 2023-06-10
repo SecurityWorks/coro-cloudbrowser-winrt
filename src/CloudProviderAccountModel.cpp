@@ -97,13 +97,9 @@ hstring ToString(const coro::cloudstorage::util::CloudProviderAccount::Id& id) {
 
 CloudProviderAccountModel::CloudProviderAccountModel(
     coro::util::EventLoop* event_loop,
-    const coro::cloudstorage::util::Clock* clock,
-    coro::cloudstorage::util::CloudProviderCacheManager cache_manager,
     coro::cloudstorage::util::CloudProviderAccount account)
     : event_loop_(event_loop),
-      clock_(clock),
       account_(std::move(account)),
-      cache_manager_(std::move(cache_manager)),
       label_(to_hstring(account_->username())),
       image_source_(to_hstring(fmt::format("ms-appx:///Assets/providers/{}.png",
                                            account_->type()))) {}
@@ -124,7 +120,6 @@ winrt::fire_and_forget CloudProviderAccountModel::final_release(
     std::unique_ptr<CloudProviderAccountModel> d) noexcept {
   co_await coro::cloudbrowser::util::SwitchTo(d->event_loop_);
   d->account_.reset();
-  d->cache_manager_.reset();
 }
 
 concurrency::task<AbstractCloudProvider::PageData>
@@ -142,13 +137,11 @@ CloudProviderAccountModel::GetItemById(
     std::string id, concurrency::cancellation_token token) const {
   return RunWinRt<AbstractCloudProvider::Item>(
       event_loop_, std::move(token), *account_,
-      [id = std::move(id), cache_manager = *cache_manager_,
-       current_time = clock_->Now()](CloudProviderAccount* account,
-                                     coro::stdx::stop_token stop_token) mutable
+      [id = std::move(id)](CloudProviderAccount* account,
+                           coro::stdx::stop_token stop_token) mutable
       -> coro::Task<AbstractCloudProvider::Item> {
-        auto versioned = co_await ::coro::cloudstorage::util::GetItemById(
-            account->provider().get(), std::move(cache_manager), current_time,
-            std::move(id), std::move(stop_token));
+        auto versioned =
+            co_await account->GetItemById(std::move(id), std::move(stop_token));
         co_return versioned.item;
       });
 }
@@ -158,8 +151,6 @@ coro::Task<VersionedDirectoryContent> CloudProviderAccountModel::ListDirectory(
     concurrency::cancellation_token token) {
   auto* event_loop = event_loop_;
   auto account = *account_;
-  auto cache_manager = *cache_manager_;
-  int64_t current_time = clock_->Now();
 
   winrt::apartment_context ui_thread;
   co_await coro::cloudbrowser::util::SwitchTo(event_loop);
@@ -174,9 +165,8 @@ coro::Task<VersionedDirectoryContent> CloudProviderAccountModel::ListDirectory(
   auto stop_token_or =
       MakeUniqueStopTokenOr(account.stop_token(), stop_source.get_token());
 
-  auto versioned = co_await ::coro::cloudstorage::util::ListDirectory(
-      std::move(cache_manager), current_time, account.provider().get(),
-      std::move(directory), stop_token_or->GetToken());
+  auto versioned = co_await account.ListDirectory(std::move(directory),
+                                                  stop_token_or->GetToken());
 
   auto updated = std::make_shared<
       coro::Promise<std::optional<std::vector<AbstractCloudProvider::Item>>>>();
