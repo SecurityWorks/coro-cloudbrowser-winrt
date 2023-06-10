@@ -76,7 +76,8 @@ constexpr std::string_view kAuthData = R"js({
     },
     "pcloud": {
         "client_id": "OwbUz84peXz",
-        "client_secret": "imi0pm1eigjQ3OgqfoJSoHS7bqgX"
+        "client_secret": "imi0pm1eigjQ3OgqfoJSoHS7bqgX",
+        "redirect_uri": "cloudbrowser.oauth:/pcloud"
     },
     "yandex": {
         "client_id" : "d8e5d26d6097441bbd8c3eeff7772643",
@@ -292,13 +293,15 @@ winrt::fire_and_forget App::OnActivated(const IActivatedEventArgs& args) {
     auto protocol_event_args = args.as<ProtocolActivatedEventArgs>();
     auto uri = protocol_event_args.Uri();
     if (uri.SchemeName() == L"cloudbrowser.oauth") {
-      hstring code = uri.QueryParsed().GetFirstValueByName(L"code");
       auto response = co_await http_.GetAsync(Uri(to_hstring(fmt::format(
-          CORO_CLOUDSTORAGE_REDIRECT_URI "/auth{}?code={}",
+          CORO_CLOUDSTORAGE_REDIRECT_URI "/auth{}{}",
           to_string(!uri.Host().empty() ? (L"/" + uri.Host()) : uri.Path()),
-          to_string(code)))));
+          to_string(uri.Query())))));
       if (auto location = response.Headers().Location()) {
         co_await Windows::System::Launcher::LaunchUriAsync(location);
+      } else {
+        auto body = co_await response.Content().ReadAsStringAsync();
+        OutputDebugStringW(body.c_str());
       }
     } else if (uri.SchemeName() == L"cloudbrowser") {
       deep_link_event_(*this, uri);
