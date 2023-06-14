@@ -23,8 +23,8 @@ std::string GetCloudProviderName(AbstractCloudProvider::Type type) {
       return "Dropbox";
     case AbstractCloudProvider::Type::kGoogleDrive:
       return "Google Drive";
-    case AbstractCloudProvider::Type::kHubiC:
-      return "hubiC";
+    case AbstractCloudProvider::Type::kOpenStack:
+      return "OpenStack";
     case AbstractCloudProvider::Type::kLocalFileSystem:
       return "Local Drive";
     case AbstractCloudProvider::Type::kMega:

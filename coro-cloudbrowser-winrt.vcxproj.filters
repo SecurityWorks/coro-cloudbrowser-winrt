@@ -55,9 +55,6 @@
     <Image Include="Assets\providers\local.png">
       <Filter>Assets\providers</Filter>
     </Image>
-    <Image Include="Assets\providers\hubic.png">
-      <Filter>Assets\providers</Filter>
-    </Image>
     <Image Include="Assets\providers\google.png">
       <Filter>Assets\providers</Filter>
     </Image>
@@ -83,6 +80,9 @@
       <Filter>Assets\providers</Filter>
     </Image>
     <Image Include="Assets\providers\yandex.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
+    <Image Include="Assets\providers\openstack.png">
       <Filter>Assets\providers</Filter>
     </Image>
   </ItemGroup>
