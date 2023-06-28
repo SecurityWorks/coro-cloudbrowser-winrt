@@ -127,9 +127,10 @@ CloudProviderAccountModel::ListDirectoryPage(
     AbstractCloudProvider::Directory directory,
     std::optional<std::string> page_token,
     concurrency::cancellation_token token) const {
-  return RunWinRt(event_loop_, std::move(token), *account_,
-                  &AbstractCloudProvider::ListDirectoryPage,
-                  std::move(directory), std::move(page_token));
+  return RunWinRt<AbstractCloudProvider::PageData>(
+      event_loop_, std::move(token), *account_,
+      &AbstractCloudProvider::ListDirectoryPage, std::move(directory),
+      std::move(page_token));
 }
 
 concurrency::task<AbstractCloudProvider::Item>
