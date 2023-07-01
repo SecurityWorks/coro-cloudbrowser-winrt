@@ -21,7 +21,6 @@ namespace {
 
 using ::coro::cloudstorage::util::AbstractCloudProvider;
 using ::coro::cloudstorage::util::CloudProviderAccount;
-using ::coro::cloudstorage::util::GetItemByPathComponents;
 using ::coro::cloudstorage::util::SplitString;
 using ::coro::cloudstorage::util::VersionedDirectoryContent;
 using ::coro::http::DecodeUri;
@@ -75,15 +74,6 @@ concurrency::task<T> RunWinRt(
         return std::invoke(func, account->provider().get(), std::move(args)...,
                            std::move(stop_token));
       });
-}
-
-std::vector<std::string> GetPathComponents(std::string path) {
-  std::stringstream stream;
-  std::vector<std::string> components;
-  for (std::string_view component : SplitString(path, '/')) {
-    components.push_back(DecodeUri(component));
-  }
-  return components;
 }
 
 }  // namespace

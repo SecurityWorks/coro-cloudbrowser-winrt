@@ -46,7 +46,6 @@ class CloudProviderAccountModel
 
  private:
   coro::util::EventLoop* event_loop_;
-  const coro::cloudstorage::util::Clock* clock_;
   std::optional<coro::cloudstorage::util::CloudProviderAccount> account_;
   hstring image_source_;
   hstring label_;
