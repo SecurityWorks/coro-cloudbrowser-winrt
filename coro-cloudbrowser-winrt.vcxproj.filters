@@ -85,6 +85,9 @@
     <Image Include="Assets\providers\openstack.png">
       <Filter>Assets\providers</Filter>
     </Image>
+    <Image Include="Assets\providers\youtube.png">
+      <Filter>Assets\providers</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="src/App.xaml">

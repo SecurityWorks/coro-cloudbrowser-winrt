@@ -37,6 +37,8 @@ std::string GetCloudProviderName(AbstractCloudProvider::Type type) {
       return "WebDAV";
     case AbstractCloudProvider::Type::kYandexDisk:
       return "Yandex Disk";
+    case AbstractCloudProvider::Type::kYouTube:
+      return "YouTube";
     default:
       return "Unknown";
   }

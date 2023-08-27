@@ -85,8 +85,9 @@ constexpr std::string_view kAuthData = R"js({
         "redirect_uri": "cloudbrowser.oauth:/yandex"
     },
     "youtube": {
-        "client_id": "379556609343-0v8r2fpijkjpj707a76no2rve6nto2co.apps.googleusercontent.com",
-        "client_secret": "_VUpM5Pf9_54RIZq2GGUbUMZ"
+        "client_id": "379556609343-s5n28rjuh0ug0e7im3gjsq7j19dm6t3g.apps.googleusercontent.com",
+        "client_secret": "",
+        "redirect_uri": "cloudbrowser.oauth:/youtube"
     }
   })js";
 
